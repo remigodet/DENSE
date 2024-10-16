@@ -179,7 +179,7 @@ def get_dataset(args):
         else:
             user_groups = cifar_noniid(train_dataset, args.num_users)
     elif args.dataset == 'mnist':
-        data_dir = '/youtu-face-identify-public/jiezhang/data'
+        data_dir = './youtu-face-identify-public/jiezhang/data'
         apply_transform = transforms.Compose([
             transforms.ToTensor()])
 
@@ -197,7 +197,7 @@ def get_dataset(args):
 
             user_groups = mnist_noniid(train_dataset, args.num_users)
     elif args.dataset == "fmnist":
-        data_dir = '/youtu-face-identify-public/jiezhang/data'
+        data_dir = './youtu-face-identify-public/jiezhang/data'
         apply_transform = transforms.Compose([
             transforms.ToTensor()])
 
