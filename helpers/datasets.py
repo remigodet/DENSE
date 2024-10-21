@@ -84,7 +84,10 @@ def load_data(dataset):
     if dataset == "svhn":
         X_train, y_train = train_dataset.data, train_dataset.labels
         X_test, y_test = test_dataset.data, test_dataset.labels
-    else:
+    elif "cifar10" in dataset:  
+        X_train, y_train = train_dataset.train_data, train_dataset.train_labels
+        X_test, y_test = test_dataset.train_data, test_dataset.train_labels
+    else: #maybe to be modified as above ?
         X_train, y_train = train_dataset.data, train_dataset.targets
         X_test, y_test = test_dataset.data, test_dataset.targets
     if "cifar10" in dataset or dataset == "svhn":
