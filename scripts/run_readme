@@ -1,5 +1,7 @@
+conda init
 conda env list
 conda activate DENSE
 conda list
+wandboff
 python3 loop_df_fl.py --type=pretrain  --iid=0 --lr=0.01 --model=cnn --dataset=cifar10 --beta=0.5 --seed=1 --num_users=5 --local_ep=400
 python loop_df_fl.py --type=kd_train --iid=0 --epochs=200 --lr=0.005 --batch_size 256 --synthesis_batch_size=256 --g_steps 30 --lr_g 1e-3 --bn 1.0 --oh 1.0 --T 20 --save_dir=run/cifar10 --other=cifar10 --model=cnn --dataset=cifar10 --adv=1 --beta=0.5 --seed=1
