@@ -10,7 +10,7 @@ import random
 
 
 def load_data(dataset):
-    data_dir = '/dataset'
+    data_dir = './dataset'
     if dataset == "mnist":
         train_dataset = datasets.MNIST(data_dir, train=True,
                                        transform=transforms.Compose(
@@ -74,7 +74,7 @@ def load_data(dataset):
                 transforms.ToTensor(),
             ])
         }
-        data_dir = "data/tiny-imagenet-200/"
+        data_dir = "./data/tiny-imagenet-200/"
         image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x), data_transforms[x])
                           for x in ['train', 'val', 'test']}
         train_dataset = image_datasets['train']
