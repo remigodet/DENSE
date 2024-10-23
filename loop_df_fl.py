@@ -303,7 +303,7 @@ if __name__ == '__main__':
             args.cur_ep += 1
             kd_train(synthesizer, [global_model, ensemble_model], criterion, optimizer)  # # kd_steps
             acc, test_loss = test(global_model, test_loader)
-            distill_acc.append(acc)
+            distill_acc.append([acc])
             is_best = acc > bst_acc
             bst_acc = max(acc, bst_acc)
             _best_ckpt = 'df_ckpt/{}.pth'.format(args.other)
