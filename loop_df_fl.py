@@ -238,7 +238,7 @@ if __name__ == '__main__':
         # np.save("client_{}_acc.npy".format(args.num_users), acc_list)
         wandb.log({"client_accuracy" : wandb.plot.line_series(
             xs=[ i for i in range(args.local_ep) ],
-            ys=[ acc_list[i] for i in range(args.num_users) ],
+            ys=[ [acc_list[i]] for i in range(args.num_users) ],
             keys=users,
             title="Client Accuacy")})
         # torch.save(local_weights, '{}_{}.pkl'.format(name, iid))
@@ -303,7 +303,7 @@ if __name__ == '__main__':
             args.cur_ep += 1
             kd_train(synthesizer, [global_model, ensemble_model], criterion, optimizer)  # # kd_steps
             acc, test_loss = test(global_model, test_loader)
-            distill_acc.append([acc])
+            distill_acc.append(acc)
             is_best = acc > bst_acc
             bst_acc = max(acc, bst_acc)
             _best_ckpt = 'df_ckpt/{}.pth'.format(args.other)
@@ -316,7 +316,7 @@ if __name__ == '__main__':
 
         wandb.log({"global_accuracy" : wandb.plot.line_series(
             xs=[ i for i in range(args.epochs) ],
-            ys=distill_acc,
+            ys=[ [distill_acc[i]] for i in range(args.epochs) ],
             keys="DENSE",
             title="Accuracy of DENSE")})
         # np.save("distill_acc_{}.npy".format(args.dataset), np.array(distill_acc)) # save accuracy
