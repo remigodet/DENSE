@@ -242,7 +242,7 @@ if __name__ == '__main__':
             keys=users,
             title="Client Accuacy")})
         # torch.save(local_weights, '{}_{}.pkl'.format(name, iid))
-        torch.save(local_weights, '{}_{}clients_{}.pkl'.format(args.dataset, args.num_users, args.beta))
+        torch.save(local_weights, 'weights/{}_{}clients_{}.pkl'.format(args.dataset, args.num_users, args.beta))
         # update global weights by FedAvg
         global_weights = average_weights(local_weights)
         global_model.load_state_dict(global_weights)
@@ -318,8 +318,8 @@ if __name__ == '__main__':
             xs=[ i for i in range(args.epochs) ],
             ys=distill_acc,
             keys="DENSE",
-            title="Accuacy of DENSE")})
-        np.save("distill_acc_{}.npy".format(args.dataset), np.array(distill_acc))
+            title="Accuracy of DENSE")})
+        # np.save("distill_acc_{}.npy".format(args.dataset), np.array(distill_acc)) # save accuracy
 
         # ===============================================
 
