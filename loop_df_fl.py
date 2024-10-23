@@ -234,12 +234,7 @@ if __name__ == '__main__':
         # wandb 
 
         for i in range(args.local_ep):
-            wandb.log({"client_{}_acc".format(users[0]):acc_list[0][i],
-                "client_{}_acc".format(users[1]):acc_list[1][i],
-                "client_{}_acc".format(users[2]):acc_list[2][i],
-                "client_{}_acc".format(users[3]):acc_list[3][i],
-                "client_{}_acc".format(users[4]):acc_list[4][i],
-            })
+            wandb.log({sum(["client_{}_acc".format(users[c]):acc_list[c][i] for c in range(args.num_users)])})
         # np.save("client_{}_acc.npy".format(args.num_users), acc_list)
         wandb.log({"client_accuracy" : wandb.plot.line_series(
             xs=[ i for i in range(args.local_ep) ],
