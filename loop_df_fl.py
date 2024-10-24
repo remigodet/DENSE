@@ -316,7 +316,7 @@ if __name__ == '__main__':
 
         wandb.log({"global_accuracy" : wandb.plot.line_series(
             xs=[ i for i in range(args.epochs) ],
-            ys=[ [distill_acc[i]] for i in range(args.epochs) ],
+            ys=[distill_acc],
             keys="DENSE",
             title="Accuracy of DENSE")})
         # np.save("distill_acc_{}.npy".format(args.dataset), np.array(distill_acc)) # save accuracy
