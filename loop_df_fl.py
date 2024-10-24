@@ -313,10 +313,6 @@ if __name__ == '__main__':
                 'best_acc': float(bst_acc),
             }, is_best, _best_ckpt)
             wandb.log({'accuracy': acc})
-        print([ i for i in range(args.epochs) ])
-        print([distill_acc])
-        print(len([distill_acc]))
-        print(len([ i for i in range(args.epochs) ]))
         wandb.log({"global_accuracy" : wandb.plot.line_series(
             xs=[ i for i in range(args.epochs) ],
             ys=[distill_acc],
