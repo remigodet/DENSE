@@ -34,7 +34,7 @@ class LocalUpdate(object):
     def __init__(self, args, dataset, idxs):
         self.args = args
         self.train_loader = DataLoader(DatasetSplit(dataset, idxs),
-                                       batch_size=self.args.local_bs, shuffle=True, num_workers=4)
+                                       batch_size=self.args.local_bs, shuffle=True, num_workers=self.args.num_workers)
 
     def update_weights(self, model, client_id):
         model.train()
@@ -107,6 +107,7 @@ def args_parser():
                         help='number of iterations for generation')
     parser.add_argument('--batch_size', default=256, type=int, metavar='N',
                         help='number of total iterations in each epoch')
+    parser.add_argument('--num_workers', default=4, type=int, help='num workers in dataloader, reduce to run on less RAM')
     parser.add_argument('--nz', default=256, type=int, metavar='N',
                         help='number of total iterations in each epoch')
     parser.add_argument('--synthesis_batch_size', default=256, type=int)
@@ -208,8 +209,8 @@ if __name__ == '__main__':
     train_dataset, test_dataset, user_groups, traindata_cls_counts = partition_data(
         args.dataset, args.partition, beta=args.beta, num_users=args.num_users)
 
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=256,
-                                              shuffle=False, num_workers=4)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size,
+                                              shuffle=False, num_workers=args.num_workers)
     # BUILD MODEL
 
     global_model = get_model(args)
