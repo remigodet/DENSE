@@ -18,7 +18,7 @@ from helpers.utils import get_dataset, average_weights, DatasetSplit, KLDiv, set
 from models.generator import Generator
 from models.nets import CNNCifar, CNNMnist, CNNCifar100
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, TensorDataset
 import torch.nn.functional as F
 
 from models.resnet import resnet18
@@ -32,6 +32,7 @@ upsample = torch.nn.Upsample(mode='nearest', scale_factor=7)
 
 class LocalUpdate(object):
     def __init__(self, args, dataset, idxs):
+        self.dataset = dataset
         self.args = args
         self.train_loader = DataLoader(DatasetSplit(dataset, idxs),
                                        batch_size=self.args.local_bs, shuffle=True, num_workers=self.args.num_workers)
@@ -40,6 +41,94 @@ class LocalUpdate(object):
         model.train()
         optimizer = torch.optim.SGD(model.parameters(), lr=self.args.lr,
                                     momentum=0.9)
+        
+        if self.args.LDP:
+            ## opacus
+            # from from opacus.validators import ModuleValidator
+            # from opacus import PrivacyEngine
+            # errors = ModuleValidator.validate(model, strict=False)
+            # print(errors)
+            
+            # model, optimizer, self.train_loader = privacy_engine.make_private(
+            #                                                             module=model,
+            #                                                             optimizer=optimizer,
+            #                                                             data_loader=self.train,
+            #                                                             max_grad_norm=1.0,
+            #                                                             noise_multiplier=1.0,
+            #                                                         )
+            
+            ## torchdp 
+            # from torchdp import PrivacyEngine
+            # privacy_engine = PrivacyEngine(
+            #     model,
+            #     args.batch_size,
+            #     len(self.train_loader.dataset),
+            #     alphas=[1, 10, 100],
+            #     noise_multiplier=1.3,
+            #     max_grad_norm=1.0,
+            # )
+            # privacy_engine.attach(optimizer)
+            
+            
+            # pyvacy as in https://github.com/ChrisWaites/pyvacy
+            
+            from pyvacy import optim, analysis, sampling
+            
+            training_parameters = {
+                'N': len(self.dataset),
+                
+                
+                # An upper bound on the L2 norm of each gradient update.
+                # A good rule of thumb is to use the median of the L2 norms observed
+                # throughout a non-private training loop.
+                'l2_norm_clip': 1.0,
+                # A coefficient used to scale the standard deviation of the noise applied to gradients.
+                'noise_multiplier': 1.1,
+                # Each example is given probability of being selected with minibatch_size / N.
+                # Hence this value is only the expected size of each minibatch, not the actual. 
+                'minibatch_size': 1000,
+                # Each minibatch is partitioned into distinct groups of this size.
+                # The smaller this value, the less noise that needs to be applied to achieve
+                # the same privacy, and likely faster convergence. Although this will increase the runtime.
+                'microbatch_size': 20,
+                # The usual privacy parameter for (ε,δ)-Differential Privacy.
+                # A generic selection for this value is 1/(N^1.1), but it's very application dependent.
+                'delta': 1e-5,
+                # The number of minibatches to process in the training loop.
+                'iterations': 250,
+                
+                
+                # added !
+                'lr': self.args.lr,
+                'momentum': 0.9
+                
+            }
+            print("training params: ", training_parameters)
+            # model ok
+            optimizer = optim.DPSGD(params=model.parameters(), 
+                                    l2_norm_clip=training_parameters['l2_norm_clip'],
+                                    noise_multiplier=training_parameters['noise_multiplier'],
+                                    minibatch_size=training_parameters['minibatch_size'],
+                                    microbatch_size=training_parameters['microbatch_size'],
+                                    lr=self.args.lr,
+                                    momentum=0.9)
+            epsilon = analysis.epsilon(N=training_parameters['N'],
+                                       batch_size=training_parameters['microbatch_size'],
+                                       noise_multiplier=training_parameters['noise_multiplier'],
+                                       iterations=training_parameters['iterations'],
+                                       delta=training_parameters['delta'],
+                                       )
+            print("###########EPSILON################", epsilon)
+            
+            # loaders for the data (functions)
+            
+            minibatch_loader, microbatch_loader = sampling.get_data_loaders(microbatch_size=training_parameters['microbatch_size'],
+                                                                            minibatch_size=training_parameters['minibatch_size'],
+                                                                            iterations=training_parameters['iterations'],
+                                                                            )
+            
+            
+
         # label_list = [0] * 100
         # for batch_idx, (images, labels) in enumerate(self.train_loader):
         #     for i in range(100):
@@ -47,15 +136,37 @@ class LocalUpdate(object):
         # print(label_list)
         local_acc_list = []
         for iter in tqdm(range(self.args.local_ep)):
-            for batch_idx, (images, labels) in enumerate(self.train_loader):
-                images, labels = images.cuda(), labels.cuda()
-                model.zero_grad()
-                # ---------------------------------------
-                output = model(images)
-                loss = F.cross_entropy(output, labels)
-                # ---------------------------------------
-                loss.backward()
-                optimizer.step()
+            
+            ##DP
+            if self.args.LDP:
+                for X_minibatch, y_minibatch in tqdm(minibatch_loader(self.dataset)):
+                    optimizer.zero_grad()
+                    for X_microbatch, y_microbatch in tqdm(microbatch_loader(TensorDataset(X_minibatch, y_minibatch))):
+                        X_microbatch, y_microbatch = X_microbatch.cuda(), y_microbatch.cuda()
+                        optimizer.zero_microbatch_grad()
+                        loss = F.cross_entropy(model(X_microbatch), y_microbatch)
+                        loss.backward()
+                        optimizer.microbatch_step()
+                    optimizer.step()
+            
+            
+            
+            else:
+                ## NON DP 
+                for batch_idx, (images, labels) in enumerate(self.train_loader):
+                    images, labels = images.cuda(), labels.cuda()
+                    model.zero_grad()
+                    # ---------------------------------------
+                    output = model(images)
+                    loss = F.cross_entropy(output, labels)
+                    # ---------------------------------------
+                    loss.backward()
+                    optimizer.step()
+                
+                
+                
+                
+            # common part 
             acc, test_loss = test(model, test_loader)
             # if client_id == 0:
             #     wandb.log({'local_epoch': iter})
@@ -120,6 +231,10 @@ def args_parser():
                         help='seed for initializing training.')
     parser.add_argument('--other', default="", type=str,
                         help='seed for initializing training.')
+    # Local Differential Privacy 
+    parser.add_argument('--LDP', default=False, type=bool, 
+                        help='Whether to apply local differential privacy to the local models')
+    
     args = parser.parse_args()
     return args
 
