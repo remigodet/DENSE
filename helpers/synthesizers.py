@@ -41,7 +41,7 @@ class Ensemble_A(torch.nn.Module):
 
         return logits_e
 
-class Ensemble_M(torch.nn.Module):
+class Ensemble_M(torch.nn.Module): # not used at all ? 
     def __init__(self, model_list):
         super(Ensemble_M, self).__init__()
         self.models = model_list
@@ -197,7 +197,11 @@ class AdvSynthesizer():
         #############################################
         for m in net.modules():
             if isinstance(m, nn.BatchNorm2d):
-                hooks.append(DeepInversionHook(m))
+                hooks.append(DeepInversionHook(m)) # on each BN layers of teacher, apply a hook that returns L2 loss between var and mean of 2 distributions : 
+                # one from the input of the BN layer IE "the statistics from generator" and one from the current BN layer params IE the teachers 
+                # BUT ALL INSIDE THE TEACHER -> lOSS TO GENERATOR 
+                # hooks are always called after a forward() on a module / can return a modified output or None 
+                # here, it is used to store r_feature 
 
         with tqdm(total=self.iterations) as t:
             for it in range(self.iterations):
