@@ -1,0 +1,20 @@
+#!/bin/bash
+#
+# Submission script for readme of DENSE repository
+#
+# Comments starting with #OAR are used by the resource manager if using "oarsub -S"
+#
+# The job reserves 8 nodes with one processor (core) per node,
+# only on xeon nodes from cluster dellc6145, job duration is less than 10min
+# Note : quoting style of parameters matters, follow the example
+#OAR -l gpunum=1,walltime=8
+#OAR -p gpu='YES' and gpucapability>='5.0'
+#
+# The job is submitted to the default queue
+#OAR -q default
+#OAR -O ./DENSE/outputs/out/OUT_%jobid%
+#OAR -E ./DENSE/outputs/err/ERR_%jobid%
+#OAR --array-param-file ./DENSE/scripts/param_file
+#
+# Jobs :
+cat
