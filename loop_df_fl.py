@@ -277,10 +277,9 @@ def args_parser():
                         )
     parser.add_argument('--iterations',
                         type=int,
-                        default=250,
+                        default=400,
                         help='''
                         The number of minibatches to process in the training loop.
-                        'iterations': 250,
                         '''
                         )
     
