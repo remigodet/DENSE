@@ -16,6 +16,15 @@
 #OAR -E ./DENSE/outputs/err/ERR_%jobid%
 #OAR --array-param-file ./DENSE/scripts/param_file
 #
+# ! remember to set permissions for the run file 
+#
 # Jobs :
-python $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
-python $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+echo "RUN DENSE ARRAY"
+echo "on env $1"
+source ./miniconda3/bin/activate
+cd DENSE
+conda env list
+conda activate $1
+conda list
+wandb off
+python $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 $21
