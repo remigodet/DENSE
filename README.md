@@ -36,7 +36,7 @@ Here is an explanation of some parameters,
 - `--beta`: concentration parameter beta for latent Dirichlet Allocation (default: beta=0.5).
 - `--model`: model architecture to be used (e.g., `cnn`, `resnet`, or `vit`).
 - `--epochs`: the number of total communication rounds. (default: `200`)
-- `--frac`: fraction of clients to be ramdonly sampled at each round (default: `1`)
+- `--frac`: fraction of clients to be ramdonly sampled at each round (default: `1`) # not implemented ...
 - `--local_ep`: the number of local epochs (default: `400`).
 - `--lr`: the initial learning rate for local training (default: `0.01`)
 - `--momentum`: the momentum for SGD (default: `0.9`).

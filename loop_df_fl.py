@@ -40,7 +40,7 @@ class LocalUpdate(object):
     def update_weights(self, model, client_id):
         model.train()
         optimizer = torch.optim.SGD(model.parameters(), lr=self.args.lr,
-                                    momentum=0.9)
+                                    momentum=self.args.momentum)
         
         if self.args.LDP:
             ## opacus
@@ -81,26 +81,26 @@ class LocalUpdate(object):
                 # An upper bound on the L2 norm of each gradient update.
                 # A good rule of thumb is to use the median of the L2 norms observed
                 # throughout a non-private training loop.
-                'l2_norm_clip': 1.0,
+                'l2_norm_clip': self.args.l2_norm_clip,
                 # A coefficient used to scale the standard deviation of the noise applied to gradients.
-                'noise_multiplier': 1.1,
+                'noise_multiplier': self.args.noise_multiplier,
                 # Each example is given probability of being selected with minibatch_size / N.
                 # Hence this value is only the expected size of each minibatch, not the actual. 
-                'minibatch_size': 1000,
+                'minibatch_size': self.args.minibatch_size,
                 # Each minibatch is partitioned into distinct groups of this size.
                 # The smaller this value, the less noise that needs to be applied to achieve
                 # the same privacy, and likely faster convergence. Although this will increase the runtime.
-                'microbatch_size': 20,
+                'microbatch_size': self.args.microbatch_size,
                 # The usual privacy parameter for (ε,δ)-Differential Privacy.
                 # A generic selection for this value is 1/(N^1.1), but it's very application dependent.
-                'delta': 1e-5,
+                'delta': self.args.delta,
                 # The number of minibatches to process in the training loop.
-                'iterations': 250,
+                'iterations': self.args.iterations,
                 
                 
                 # added !
                 'lr': self.args.lr,
-                'momentum': 0.9
+                'momentum': self.args.momentum
                 
             }
             print("training params: ", training_parameters)
@@ -135,24 +135,30 @@ class LocalUpdate(object):
         #         label_list[i] += torch.sum(labels == i).item()
         # print(label_list)
         local_acc_list = []
-        for iter in tqdm(range(self.args.local_ep)):
-            
-            ##DP
-            if self.args.LDP:
-                for X_minibatch, y_minibatch in tqdm(minibatch_loader(self.dataset)):
-                    optimizer.zero_grad()
-                    for X_microbatch, y_microbatch in tqdm(microbatch_loader(TensorDataset(X_minibatch, y_minibatch))):
-                        X_microbatch, y_microbatch = X_microbatch.cuda(), y_microbatch.cuda()
-                        optimizer.zero_microbatch_grad()
-                        loss = F.cross_entropy(model(X_microbatch), y_microbatch)
-                        loss.backward()
-                        optimizer.microbatch_step()
-                    optimizer.step()
-            
-            
-            
-            else:
-                ## NON DP 
+        
+        ##DP
+        if self.args.LDP:
+            for X_minibatch, y_minibatch in tqdm(minibatch_loader(self.dataset)):
+                optimizer.zero_grad()
+                for X_microbatch, y_microbatch in tqdm(microbatch_loader(TensorDataset(X_minibatch, y_minibatch))):
+                    X_microbatch, y_microbatch = X_microbatch.cuda(), y_microbatch.cuda()
+                    optimizer.zero_microbatch_grad()
+                    loss = F.cross_entropy(model(X_microbatch), y_microbatch)
+                    loss.backward()
+                    optimizer.microbatch_step()
+                optimizer.step()
+
+                # common part 
+                acc, test_loss = test(model, test_loader)
+                # if client_id == 0:
+                #     wandb.log({'local_epoch': iter})
+                # wandb.log({'client_{}_accuracy'.format(client_id): acc})
+                local_acc_list.append(acc)
+                
+        ## NON DP 
+        else:
+            for iter in tqdm(range(self.args.local_ep)):
+                
                 for batch_idx, (images, labels) in enumerate(self.train_loader):
                     images, labels = images.cuda(), labels.cuda()
                     model.zero_grad()
@@ -163,15 +169,14 @@ class LocalUpdate(object):
                     loss.backward()
                     optimizer.step()
                 
+                # common part 
+                acc, test_loss = test(model, test_loader)
+                # if client_id == 0:
+                #     wandb.log({'local_epoch': iter})
+                # wandb.log({'client_{}_accuracy'.format(client_id): acc})
+                local_acc_list.append(acc)
                 
                 
-                
-            # common part 
-            acc, test_loss = test(model, test_loader)
-            # if client_id == 0:
-            #     wandb.log({'local_epoch': iter})
-            # wandb.log({'client_{}_accuracy'.format(client_id): acc})
-            local_acc_list.append(acc)
         return model.state_dict(), np.array(local_acc_list)
 
 
@@ -196,7 +201,7 @@ def args_parser():
     parser.add_argument('--dataset', type=str, default='cifar10', help="name \
                         of dataset")
     parser.add_argument('--iid', type=int, default=1,
-                        help='Default set to IID. Set to 0 for non-IID.')
+                        help='Default set to IID. Set to 0 for non-IID.') # for the dataset, not the the partition
 
     # Data Free
     parser.add_argument('--adv', default=0, type=float, help='scaling factor for adv loss')
@@ -234,7 +239,59 @@ def args_parser():
     # Local Differential Privacy 
     parser.add_argument('--LDP', default=False, type=bool, 
                         help='Whether to apply local differential privacy to the local models')
+    parser.add_argument('--l2_norm_clip',
+                        type=float,
+                        default=1.0,
+                        help='''An upper bound on the L2 norm of each gradient update.
+                                A good rule of thumb is to use the median of the L2 norms observed
+                                throughout a non-private training loop.
+                        '''
+                        )
+    parser.add_argument('--noise_multiplier',
+                        type=float,
+                        default=1.1,
+                        help='''A coefficient used to scale the standard deviation of the noise applied to gradients.
+                        '''
+                        )
+    parser.add_argument('--minibatch_size',
+                        type=int,
+                        default=1000,
+                        help='''Each example is given probability of being selected with minibatch_size / N.
+                                Hence this value is only the expected size of each minibatch, not the actual.
+                        '''
+                        )
+    parser.add_argument('--microbatch_size',
+                        type=int,
+                        default=20,
+                        help='''Each minibatch is partitioned into distinct groups of this size.
+                                The smaller this value, the less noise that needs to be applied to achieve
+                                the same privacy, and likely faster convergence. Although this will increase the runtime.
+                        '''
+                        )
+    parser.add_argument('--delta',
+                        type=float,
+                        default=1e-5,
+                        help='''The usual privacy parameter for (ε,δ)-Differential Privacy.
+                                A generic selection for this value is 1/(N^1.1), but it's very application dependent.
+                        '''
+                        )
+    parser.add_argument('--iterations',
+                        type=int,
+                        default=250,
+                        help='''
+                        The number of minibatches to process in the training loop.
+                        'iterations': 250,
+                        '''
+                        )
     
+    
+    # identifier name of the run 
+    parser.add_argument('--tag', 
+                        type=str,
+                        default=None,
+                        help='an identifier to find the run later')
+        
+    # parse 
     args = parser.parse_args()
     return args
 
@@ -253,7 +310,36 @@ class Ensemble(torch.nn.Module):
 
         return logits_e
 
-
+class RunName():
+    # class to name the run given args, the wandb id and a user-defined tag
+    def __init__(self, args) -> None:
+        self.args = args
+        self.id = wandb.run.id
+        print("run wandb id = ", self.id)
+        
+    def get_run_name(self) -> str:
+        if self.args.LDP:
+            run_name = '{}_beta{}_nbusers{}_LDP{}_its{}_clip{}_noise{}_mini{}_micro{}_delta{}'
+            run_name = run_name.format(self.args.dataset, 
+                                        self.args.beta, 
+                                        self.args.num_users, 
+                                        self.args.LDP, 
+                                        self.args.iterations, 
+                                        self.args.l2_norm_clip,
+                                        self.args.noise_multiplier,
+                                        self.args.minibatch_size,
+                                        self.args.microbatch_size,
+                                        self.args.delta)
+        else:
+            run_name = '{}_beta{}_nbusers{}_LDP{}'
+            run_name = run_name.format(self.args.dataset, 
+                                        self.args.beta, 
+                                        self.args.num_users, 
+                                        self.args.LDP)
+        if self.args.tag:
+            run_name = self.args.tag + "_" + run_name
+        return run_name
+        
 def kd_train(synthesizer, model, criterion, optimizer):
     student, teacher = model
     student.train()
@@ -314,13 +400,18 @@ def get_model(args):
 
 
 if __name__ == '__main__':
-
+    # init 
     args = args_parser()
     wandb.init(config=args,
                project="ont-shot FL")
 
+
     setup_seed(args.seed)
     # pdb.set_trace()
+    run_name = RunName(args).get_run_name()
+    print(run_name)
+    
+    # Load Data
     train_dataset, test_dataset, user_groups, traindata_cls_counts = partition_data(
         args.dataset, args.partition, beta=args.beta, num_users=args.num_users)
 
@@ -349,16 +440,16 @@ if __name__ == '__main__':
 
         # wandb 
 
-        for i in range(args.local_ep):
+        for i in range(len(acc_list[0])):
             wandb.log({"client_{}_acc".format(users[c]):acc_list[c][i] for c in range(args.num_users)})
         # np.save("client_{}_acc.npy".format(args.num_users), acc_list)
         wandb.log({"client_accuracy" : wandb.plot.line_series(
-            xs=[ i for i in range(args.local_ep) ],
+            xs=[ i for i in range(len(acc_list[0])) ],
             ys=[ [acc_list[i]] for i in range(args.num_users) ],
             keys=users,
             title="Client Accuacy")})
         # torch.save(local_weights, '{}_{}.pkl'.format(name, iid))
-        torch.save(local_weights, 'weights/{}_{}clients_{}.pkl'.format(args.dataset, args.num_users, args.beta))
+        torch.save(local_weights, f'weights/{run_name}.pkl')
         # update global weights by FedAvg
         global_weights = average_weights(local_weights)
         global_model.load_state_dict(global_weights)
@@ -375,7 +466,7 @@ if __name__ == '__main__':
         # ===============================================
     else:
         # ===============================================
-        local_weights = torch.load('{}_{}clients_{}.pkl'.format(args.dataset, args.num_users, args.beta))
+        local_weights = torch.load(f'{run_name}.pkl')
         global_weights = average_weights(local_weights)
         global_model.load_state_dict(global_weights)
         print("avg acc:")
