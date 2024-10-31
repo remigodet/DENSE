@@ -1,4 +1,4 @@
-notes.md
+_*.md
 dataset/*
 weights/*
 wandb/*
