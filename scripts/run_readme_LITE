@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# Submission script for readme of DENSE repository
+#
+# Comments starting with #OAR are used by the resource manager if using "oarsub -S"
+#
+# The job reserves 8 nodes with one processor (core) per node,
+# only on xeon nodes from cluster dellc6145, job duration is less than 10min
+# Note : quoting style of parameters matters, follow the example
+#OAR -l gpunum=1,walltime=4
+#OAR -p gpu='YES' and gpucapability>='5.0'
+#
+# The job is submitted to the default queue
+#OAR -q default
+#OAR -O ./DENSE/outputs/out/OUT_%jobid%
+#OAR -E ./DENSE/outputs/err/ERR_%jobid%
+#
+# Jobs :
+echo "RUN DENSE ARRAY"
+echo "on env $1"
+source ./miniconda3/bin/activate
+cd DENSE
+conda env list
+conda activate $1
+conda list
+wandb off
+python3 loop_df_fl.py --type=pretrain  --iid=0 --lr=0.01 --model=cnn --dataset=cifar10 --beta=0.5 --seed=1 --num_users=4 --local_ep=2
+python loop_df_fl.py --type=kd_train --iid=0 --epochs=2 --lr=0.005 --batch_size 256 --synthesis_batch_size=256 --g_steps 10 --lr_g 1e-3 --bn 1.0 --oh 1.0 --T 20 --save_dir=run/cifar10 --other=cifar10 --model=cnn --dataset=cifar10 --adv=1 --beta=0.5 --seed=1
