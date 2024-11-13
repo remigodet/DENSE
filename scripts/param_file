@@ -1,2 +1,2 @@
-readme dense4 0.01 cnn cifar10 0.5 1 5 0 0 0 0 False 0 400 0 256 256 1e-3 1.0 1.0 20 run/cifar10 cifar10 1 200 30 0 0.005 0.5 1
+readme dpdense3 0.01 cnn cifar10 0.5 1 5 0 0 0 0 False 0 400 0 256 256 1e-3 1.0 1.0 20 run/cifar10 cifar10 1 200 30 0 0.005 0.5 1
 readmeDPdefaultparams dpdense3 0.01 cnn cifar10 0.5 1 5 1.0 1.1 10000 1000 True 400 400 1e-5 256 256 1e-3 1.0 1.0 20 run/cifar10 cifar10 1 200 30 0 0.005 0.5 1
