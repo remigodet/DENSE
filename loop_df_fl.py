@@ -469,7 +469,7 @@ if __name__ == '__main__':
         # ===============================================
     else:
         # ===============================================
-        local_weights = torch.load(f'{run_name}.pkl')
+        local_weights = torch.load(f'weights/{run_name}.pkl')
         global_weights = average_weights(local_weights)
         global_model.load_state_dict(global_weights)
         print("avg acc:")
