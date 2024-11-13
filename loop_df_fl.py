@@ -237,7 +237,7 @@ def args_parser():
     parser.add_argument('--other', default="", type=str,
                         help='seed for initializing training.')
     # Local Differential Privacy 
-    parser.add_argument('--LDP', default=False, type=bool, 
+    parser.add_argument('--LDP', default=False, type=str, 
                         help='Whether to apply local differential privacy to the local models')
     parser.add_argument('--l2_norm_clip',
                         type=float,
@@ -403,6 +403,13 @@ def get_model(args):
 if __name__ == '__main__':
     # init 
     args = args_parser()
+    if args.LDP == "True":
+        args.LDP = True
+    elif args.LDP == "False":
+        args.LDP = False 
+    else:
+        raise AssertionError("LDP is not properly assigned in line args")
+    
     wandb.init(config=args,
                project="ont-shot FL")
 
