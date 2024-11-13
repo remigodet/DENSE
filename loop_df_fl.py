@@ -209,7 +209,7 @@ def args_parser():
     parser.add_argument('--bn', default=0, type=float, help='scaling factor for BN regularization')
     parser.add_argument('--oh', default=0, type=float, help='scaling factor for one hot loss (cross entropy)')
     parser.add_argument('--act', default=0, type=float, help='scaling factor for activation loss used in DAFL')
-    parser.add_argument('--save_dir', default='run/synthesis', type=str)
+    parser.add_argument('--save_dir', default='run/synthesis', type=str, help='saving directory for the data pool ? ')
     parser.add_argument('--partition', default='dirichlet', type=str)
     parser.add_argument('--beta', default=0.5, type=float,
                         help=' If beta is set to a smaller value, '
@@ -285,7 +285,7 @@ def args_parser():
     
     
     # identifier name of the run 
-    parser.add_argument('--tag', 
+    parser.add_argument('--run_name', 
                         type=str,
                         default=None,
                         help='an identifier to find the run later')
@@ -313,35 +313,33 @@ class Ensemble(torch.nn.Module):
 
         return logits_e
 
-class RunName():
-    # class to name the run given args, the wandb id and a user-defined tag
-    def __init__(self, args) -> None:
-        self.args = args
-        self.id = wandb.run.id
-        print("run wandb id = ", self.id)
+# class RunName():
+#     # class to name the run given args, the wandb id and a user-defined tag
+#     def __init__(self, args) -> None:
+#         self.args = args
+#         self.id = wandb.run.id
+#         print("run wandb id = ", self.id)
         
-    def get_run_name(self) -> str:
-        if self.args.LDP:
-            run_name = '{}_beta{}_nbusers{}_LDP{}_its{}_clip{}_noise{}_mini{}_micro{}_delta{}'
-            run_name = run_name.format(self.args.dataset, 
-                                        self.args.beta, 
-                                        self.args.num_users, 
-                                        self.args.LDP, 
-                                        self.args.iterations, 
-                                        self.args.l2_norm_clip,
-                                        self.args.noise_multiplier,
-                                        self.args.minibatch_size,
-                                        self.args.microbatch_size,
-                                        self.args.delta)
-        else:
-            run_name = '{}_beta{}_nbusers{}_LDP{}'
-            run_name = run_name.format(self.args.dataset, 
-                                        self.args.beta, 
-                                        self.args.num_users, 
-                                        self.args.LDP)
-        if self.args.tag:
-            run_name = self.args.tag + "_" + run_name
-        return run_name
+#     def get_run_name(self) -> str:
+#         if self.args.LDP:
+#             run_name = '{}_beta{}_nbusers{}_LDP{}_its{}_clip{}_noise{}_mini{}_micro{}_delta{}'
+#             run_name = run_name.format(self.args.dataset, 
+#                                         self.args.beta, 
+#                                         self.args.num_users, 
+#                                         self.args.LDP, 
+#                                         self.args.iterations, 
+#                                         self.args.l2_norm_clip,
+#                                         self.args.noise_multiplier,
+#                                         self.args.minibatch_size,
+#                                         self.args.microbatch_size,
+#                                         self.args.delta)
+#         else:
+#             run_name = '{}_beta{}_nbusers{}_LDP{}'
+#             run_name = run_name.format(self.args.dataset, 
+#                                         self.args.beta, 
+#                                         self.args.num_users, 
+#                                         self.args.LDP)
+#         return run_name
         
 def kd_train(synthesizer, model, criterion, optimizer):
     student, teacher = model
@@ -411,8 +409,11 @@ if __name__ == '__main__':
 
     setup_seed(args.seed)
     # pdb.set_trace()
-    run_name = RunName(args).get_run_name()
-    print(run_name)
+    
+    # run name 
+    # run_name = RunName(args).get_run_name()
+    run_name = args.run_name
+    print("run_name : ", run_name)
     
     # Load Data
     train_dataset, test_dataset, user_groups, traindata_cls_counts = partition_data(

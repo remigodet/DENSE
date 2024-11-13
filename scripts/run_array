@@ -19,4 +19,4 @@
 # ! remember to set permissions for the run file 
 #
 # list of parallel job (each will get one line from param_file)
-./DENSE/scripts/parametrized_run "$@"
+./DENSE/scripts/run_parametrized "$@"
