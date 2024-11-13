@@ -16,6 +16,8 @@
 #OAR -E ./DENSE/outputs/err/ERR_%jobid%
 #OAR --array-param-file ./DENSE/scripts/param_file
 #
+# Notify me ! 
+# OAR --notify="mail:remi.godet@inria.fr"
 # ! remember to set permissions for the run file 
 #
 # list of parallel job (each will get one line from param_file)
