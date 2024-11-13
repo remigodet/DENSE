@@ -292,6 +292,10 @@ def args_parser():
         
     # parse 
     args = parser.parse_args()
+    
+    # debug 
+    print(args, file=sys.stderr)
+    
     return args
 
 
