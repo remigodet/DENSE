@@ -368,7 +368,7 @@ def kd_train(synthesizer, model, criterion, optimizer):
         for idx, (images) in enumerate(epochs):
             optimizer.zero_grad()
             
-            images = images.cuda()
+            images = images.cuda().float()
             
             with torch.no_grad():
                 t_out = teacher(images)
