@@ -167,7 +167,7 @@ class AdvSynthesizer():
         self.synthesize(self.teacher, cur_ep)
 
     def get_data(self):
-        datasets = self.data_pool.get_dataset(transform=self.transform)  # 获取程序运行到现在所有的图片
+        datasets = self.data_pool.get_dataset(transform=self.transform)  # Get all the pictures from the program running till now
         self.data_loader = torch.utils.data.DataLoader(
             datasets, batch_size=self.sample_batch_size, shuffle=True,
             num_workers=4, pin_memory=True, )
@@ -254,12 +254,13 @@ class AdvSynthesizer():
 class TestSynthesizer:
     def __init__(self, dataset, sample_batch_size) -> None:
         self.sample_batch_size = sample_batch_size
-        self.dataset = dataset
+        self.data_loader = torch.utils.data.DataLoader(dataset, 
+                                                       batch_size=self.sample_batch_size, 
+                                                       shuffle=True,
+                                                       num_workers=4, 
+                                                       pin_memory=True)
     def gen_data(self, cur_ep):
         pass
     def get_data(self):
-        self.data_loader = torch.utils.data.DataLoader(
-            self.dataset, batch_size=self.sample_batch_size, shuffle=True,
-            num_workers=4, pin_memory=True, )
         return self.data_loader
         

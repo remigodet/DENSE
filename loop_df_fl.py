@@ -367,7 +367,9 @@ def kd_train(synthesizer, model, criterion, optimizer):
     with tqdm(synthesizer.get_data()) as epochs:
         for idx, (images) in enumerate(epochs):
             optimizer.zero_grad()
+            
             images = images.cuda()
+            
             with torch.no_grad():
                 t_out = teacher(images)
             s_out = student(images.detach())
@@ -434,7 +436,7 @@ if __name__ == '__main__':
     print("run_name : ", run_name)
     
     # Load Data
-    train_dataset, test_dataset, user_groups, traindata_cls_counts = partition_data(
+    train_dataset, test_dataset, user_groups, traindata_cls_counts, X_test = partition_data(
         args.dataset, args.partition, beta=args.beta, num_users=args.num_users)
 
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size,
@@ -512,7 +514,7 @@ if __name__ == '__main__':
         if args.upper_bound: 
             args.cur_ep = 0
             synthesizer = TestSynthesizer(
-            dataset=test_dataset,
+            dataset=X_test,
             sample_batch_size=args.batch_size
             )
         else:
