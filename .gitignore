@@ -2,7 +2,7 @@ _*.md
 dataset/*
 weights/*
 wandb/*
-
+temp.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
