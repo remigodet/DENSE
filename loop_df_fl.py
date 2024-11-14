@@ -297,11 +297,12 @@ def args_parser():
     #  modify special args  
     def str_to_bool(v):
         if v == "True":
-            v = True
+            return True
         elif v == "False":
-            v = False 
+            return False 
         else:
             raise AssertionError(f"Some property is not properly assigned in line args: {v}")
+        
     
     args.upper_bound = str_to_bool(args.upper_bound)
     args.LDP = str_to_bool(args.LDP)
