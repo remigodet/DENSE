@@ -230,7 +230,7 @@ def args_parser():
     # Misc
     parser.add_argument('--seed', default=None, type=int,
                         help='seed for initializing training.')
-    parser.add_argument('--type', default="pretrain", type=str,
+    parser.add_argument('--type', default=None, type=str,
                         help='seed for initializing training.')
     parser.add_argument('--model', default="", type=str,
                         help='seed for initializing training.')
@@ -302,6 +302,7 @@ def args_parser():
         raise AssertionError(f"LDP is not properly assigned in line args: {args.LDP}")
     
     # debug 
+    print("===================== ARGS ============================== \n", file=sys.stderr)
     print(args, file=sys.stderr)
     
     return args
@@ -411,7 +412,7 @@ def get_model(args):
 if __name__ == '__main__':
     # init 
     args = args_parser()
-    
+    print("============================ args ==================== \n", args)
     
     wandb.init(config=args,
                project="ont-shot FL")
@@ -440,6 +441,10 @@ if __name__ == '__main__':
     global_model.train()
     acc_list = []
     users = []
+    
+    # check type is specified by user 
+    assert type is not None
+    
     if args.type == "pretrain":
         # ===============================================
         for idx in range(args.num_users):
