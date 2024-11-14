@@ -8,7 +8,7 @@
 # only on xeon nodes from cluster dellc6145, job duration is less than 10min
 # Note : quoting style of parameters matters, follow the example
 # Notify me ! 
-#OAR --notify="mail:remi.godet@inria.fr"
+#OAR --notify mail:remi.godet@inria.fr
 #OAR -l gpunum=1,walltime=8
 #OAR -p gpu='YES' and gpucapability>='5.0'
 #
