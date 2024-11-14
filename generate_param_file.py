@@ -3,6 +3,7 @@
 # RUN_NAME ENV lr model dataset beta seed num_users l2_norm_clip noise_multiplier minibatch_size microbatch_size LDP iterations local_ep delta batch_size synthesis_batch_size lr_g bn oh T save_dir other adv epochs g_steps iid lr_dist beta_dist seed_dist
 
 RUN_NAME = input("RUN_NAME")
+PYHTON_FILE = input("PYTHON_FILE")
 ENV = input("ENV")
 lr = input("lr")
 model = input("model")
@@ -34,7 +35,7 @@ lr_dist = input("lr_dist")
 beta_dist = input("beta_dist")
 seed_dist = input("seed_dist")
 
-param_line = RUN_NAME + " " + ENV + " " + lr + " " + model + " " + dataset + " " + beta + " " + seed + " " + num_users + " " + l2_norm_clip + " " + noise_multiplier + " " + minibatch_size + " " + microbatch_size + " " + LDP + " " + iterations + " " + local_ep + " " + delta + " " + batch_size + " " + synthesis_batch_size + " " + lr_g + " " + bn + " " + oh + " " + T + " " + save_dir + " " + other + " " + adv + " " + epochs + " " + g_steps + " " + iid + " " + lr_dist + " " + beta_dist + " " + seed_dist
+param_line = RUN_NAME + " " + PYHTON_FILE + " " + ENV + " " + lr + " " + model + " " + dataset + " " + beta + " " + seed + " " + num_users + " " + l2_norm_clip + " " + noise_multiplier + " " + minibatch_size + " " + microbatch_size + " " + LDP + " " + iterations + " " + local_ep + " " + delta + " " + batch_size + " " + synthesis_batch_size + " " + lr_g + " " + bn + " " + oh + " " + T + " " + save_dir + " " + other + " " + adv + " " + epochs + " " + g_steps + " " + iid + " " + lr_dist + " " + beta_dist + " " + seed_dist
 
 print(param_line)
 
