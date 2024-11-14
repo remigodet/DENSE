@@ -248,3 +248,18 @@ class AdvSynthesizer():
 
         # save best inputs and reset data iter
         self.data_pool.add(best_inputs)  # 生成了一个batch的数据
+
+
+
+class TestSynthesizer:
+    def __init__(self, dataset, sample_batch_size) -> None:
+        self.sample_batch_size = sample_batch_size
+        self.dataset = dataset
+    def gen_data(self, cur_ep):
+        pass
+    def get_data(self):
+        self.data_loader = torch.utils.data.DataLoader(
+            self.dataset, batch_size=self.sample_batch_size, shuffle=True,
+            num_workers=4, pin_memory=True, )
+        return self.data_loader
+        

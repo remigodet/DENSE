@@ -1,6 +1,7 @@
 echo "RUN DENSE ARRAY"
 source ./miniconda3/bin/activate
 cd DENSE
+echo "which activate is it?"
 conda env list
 conda activate ${2}
 conda list
