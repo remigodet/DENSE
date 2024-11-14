@@ -510,6 +510,7 @@ if __name__ == '__main__':
         # ===============================================
         # define synthetic data source for the distillation
         if args.upper_bound: 
+            args.cur_ep = 0
             synthesizer = TestSynthesizer(
             dataset=test_dataset,
             sample_batch_size=args.batch_size
