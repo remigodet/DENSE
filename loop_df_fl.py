@@ -13,7 +13,7 @@ from tqdm import tqdm
 import pdb
 
 from helpers.datasets import partition_data
-from helpers.synthesizers import AdvSynthesizer
+from helpers.synthesizers import AdvSynthesizer, TestSynthesizer
 from helpers.utils import get_dataset, average_weights, DatasetSplit, KLDiv, setup_seed, test
 from models.generator import Generator
 from models.nets import CNNCifar, CNNMnist, CNNCifar100
@@ -236,6 +236,7 @@ def args_parser():
                         help='seed for initializing training.')
     parser.add_argument('--other', default="", type=str,
                         help='seed for initializing training.')
+    parser.add_argument('--upper_bound', default="False", type=str, help='wheteer to use the test set as the synthetic dataset in the distillation step')
     # Local Differential Privacy 
     parser.add_argument('--LDP', default="False", type=str, 
                         help='Whether to apply local differential privacy to the local models') # will be converted to a bool lower 
@@ -293,17 +294,22 @@ def args_parser():
     # parse 
     args = parser.parse_args()
     
-    #  modify special args
-    if args.LDP == "True":
-        args.LDP = True
-    elif args.LDP == "False":
-        args.LDP = False 
-    else:
-        raise AssertionError(f"LDP is not properly assigned in line args: {args.LDP}")
+    #  modify special args  
+    def str_to_bool(v):
+        if v == "True":
+            v = True
+        elif v == "False":
+            v = False 
+        else:
+            raise AssertionError(f"Some property is not properly assigned in line args: {v}")
+    
+    args.upper_bound = str_to_bool(args.upper_bound)
+    args.LDP = str_to_bool(args.LDP)
+    
     
     # debug 
     print("===================== ARGS ============================== \n", file=sys.stderr)
-    print(args, file=sys.stderr)
+    print(vars(args), file=sys.stderr)
     
     return args
 
@@ -412,7 +418,7 @@ def get_model(args):
 if __name__ == '__main__':
     # init 
     args = args_parser()
-    print("============================ args ==================== \n", args)
+    print("============================ args ==================== \n", vars(args))
     
     wandb.init(config=args,
                project="ont-shot FL")
@@ -483,7 +489,7 @@ if __name__ == '__main__':
         print("ensemble acc:")
         test(ensemble_model, test_loader)
         # ===============================================
-    else:
+    elif args.type == "kd_train":
         # ===============================================
         local_weights = torch.load(f'weights/{run_name}.pkl')
         global_weights = average_weights(local_weights)
@@ -501,22 +507,28 @@ if __name__ == '__main__':
         # ===============================================
         global_model = get_model(args)
         # ===============================================
-
-        # data generator
-        nz = args.nz
-        nc = 3 if "cifar" in args.dataset or args.dataset == "svhn" else 1
-        img_size = 32 if "cifar" in args.dataset or args.dataset == "svhn" else 28
-        generator = Generator(nz=nz, ngf=64, img_size=img_size, nc=nc).cuda()
-        args.cur_ep = 0
-        img_size2 = (3, 32, 32) if "cifar" in args.dataset or args.dataset == "svhn" else (1, 28, 28)
-        num_class = 100 if args.dataset == "cifar100" else 10
-        synthesizer = AdvSynthesizer(ensemble_model, model_list, global_model, generator,
-                                     nz=nz, num_classes=num_class, img_size=img_size2,
-                                     iterations=args.g_steps, lr_g=args.lr_g,
-                                     synthesis_batch_size=args.synthesis_batch_size,
-                                     sample_batch_size=args.batch_size,
-                                     adv=args.adv, bn=args.bn, oh=args.oh,
-                                     save_dir=args.save_dir, dataset=args.dataset)
+        # define synthetic data source for the distillation
+        if args.upper_bound: 
+            synthesizer = TestSynthesizer(
+            dataset=test_dataset,
+            sample_batch_size=args.batch_size
+            )
+        else:
+            # data generator
+            nz = args.nz
+            nc = 3 if "cifar" in args.dataset or args.dataset == "svhn" else 1
+            img_size = 32 if "cifar" in args.dataset or args.dataset == "svhn" else 28
+            generator = Generator(nz=nz, ngf=64, img_size=img_size, nc=nc).cuda()
+            args.cur_ep = 0
+            img_size2 = (3, 32, 32) if "cifar" in args.dataset or args.dataset == "svhn" else (1, 28, 28)
+            num_class = 100 if args.dataset == "cifar100" else 10
+            synthesizer = AdvSynthesizer(ensemble_model, model_list, global_model, generator,
+                                        nz=nz, num_classes=num_class, img_size=img_size2,
+                                        iterations=args.g_steps, lr_g=args.lr_g,
+                                        synthesis_batch_size=args.synthesis_batch_size,
+                                        sample_batch_size=args.batch_size,
+                                        adv=args.adv, bn=args.bn, oh=args.oh,
+                                        save_dir=args.save_dir, dataset=args.dataset)
         # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
         criterion = KLDiv(T=args.T)
         optimizer = torch.optim.SGD(global_model.parameters(), lr=args.lr,
@@ -547,5 +559,6 @@ if __name__ == '__main__':
         # np.save("distill_acc_{}.npy".format(args.dataset), np.array(distill_acc)) # save accuracy
 
         # ===============================================
-
+    else:
+        raise Exception(f"Wrong run type provided : {args.type}")
 
