@@ -251,19 +251,19 @@ class AdvSynthesizer():
 
 
 
-class TestSynthesizer:
-    def __init__(self, dataset, sample_batch_size) -> None:
-        self.sample_batch_size = sample_batch_size
-        self.data_loader = torch.utils.data.DataLoader(dataset, 
-                                                       batch_size=self.sample_batch_size, 
-                                                       shuffle=True,
-                                                       num_workers=4, 
-                                                       pin_memory=True,
-                                                       )
-    def gen_data(self, cur_ep):
-        pass
-    def get_data(self):
-        return self.data_loader
+# class TestSynthesizer:
+#     def __init__(self, dataset, sample_batch_size) -> None:
+#         self.sample_batch_size = sample_batch_size
+#         self.data_loader = torch.utils.data.DataLoader(dataset, 
+#                                                        batch_size=self.sample_batch_size, 
+#                                                        shuffle=True,
+#                                                        num_workers=4, 
+#                                                        pin_memory=True,
+#                                                        )
+#     def gen_data(self, cur_ep):
+#         pass
+#     def get_data(self):
+#         return self.data_loader
     
 class SynthesizerFromLoader:
     def __init__(self, data_loader, ) -> None:

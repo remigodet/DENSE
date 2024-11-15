@@ -154,4 +154,4 @@ def partition_data(dataset, partition, beta=0.4, num_users=5):
             np.random.shuffle(idx_batch[j])
             net_dataidx_map[j] = idx_batch[j]
     train_data_cls_counts = record_net_data_stats(y_train, net_dataidx_map)
-    return train_dataset, test_dataset, net_dataidx_map, train_data_cls_counts, X_test
+    return train_dataset, test_dataset, net_dataidx_map, train_data_cls_counts

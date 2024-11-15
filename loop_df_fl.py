@@ -355,7 +355,6 @@ def kd_train(synthesizer, model, criterion, optimizer):
                 t_out = teacher(images)
             s_out = student(images.detach())
             loss_s = criterion(s_out, t_out.detach())
-            print(loss_s) # debug
 
             loss_s.backward()
             optimizer.step()
@@ -419,7 +418,7 @@ if __name__ == '__main__':
     print("run_name : ", run_name)
     
     # Load Data
-    train_dataset, test_dataset, user_groups, traindata_cls_counts, X_test = partition_data(
+    train_dataset, test_dataset, user_groups, traindata_cls_counts = partition_data(
         args.dataset, args.partition, beta=args.beta, num_users=args.num_users)
 
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size,
@@ -458,7 +457,7 @@ if __name__ == '__main__':
             xs=[ i for i in range(len(acc_list[0])) ],
             ys=[ [acc_list[i]] for i in range(args.num_users) ],
             keys=users,
-            title="Client Accuacy")})
+            title="Client Accuracy")})
         # torch.save(local_weights, '{}_{}.pkl'.format(name, iid))
         torch.save(local_weights, f'weights/{run_name}.pkl')
         # update global weights by FedAvg
@@ -500,41 +499,25 @@ if __name__ == '__main__':
         args.cur_ep = 0
         
         
-        # if args.upper_bound: 
+        if args.upper_bound: 
+            synthesizer = SynthesizerFromLoader(test_loader)
         
-        def test_synth(synthesizer):
-            #debug
-             with tqdm(synthesizer.get_data()) as epochs:
-                for idx, (images) in enumerate(epochs):
-                    print(type(images))
-                    print(images[0])
-                    break
-        # CHANGE NAME BACK
-        # synthesizer2 = TestSynthesizer(dataset=X_test,
-        # sample_batch_size=args.batch_size
-        # )
-        synthesizer2 = SynthesizerFromLoader(test_loader)
-        
-        # else:
-        # data generator
-        nz = args.nz
-        nc = 3 if "cifar" in args.dataset or args.dataset == "svhn" else 1
-        img_size = 32 if "cifar" in args.dataset or args.dataset == "svhn" else 28
-        generator = Generator(nz=nz, ngf=64, img_size=img_size, nc=nc).cuda()
-        img_size2 = (3, 32, 32) if "cifar" in args.dataset or args.dataset == "svhn" else (1, 28, 28)
-        num_class = 100 if args.dataset == "cifar100" else 10
-        synthesizer = AdvSynthesizer(ensemble_model, model_list, global_model, generator,
-                                    nz=nz, num_classes=num_class, img_size=img_size2,
-                                    iterations=args.g_steps, lr_g=args.lr_g,
-                                    synthesis_batch_size=args.synthesis_batch_size,
-                                    sample_batch_size=args.batch_size,
-                                    adv=args.adv, bn=args.bn, oh=args.oh,
-                                    save_dir=args.save_dir, dataset=args.dataset)
-        #debug
-        synthesizer.gen_data(0)
-        test_synth(synthesizer)
-        #debug
-        test_synth(synthesizer2)
+        else:
+            # data generator
+            nz = args.nz
+            nc = 3 if "cifar" in args.dataset or args.dataset == "svhn" else 1
+            img_size = 32 if "cifar" in args.dataset or args.dataset == "svhn" else 28
+            generator = Generator(nz=nz, ngf=64, img_size=img_size, nc=nc).cuda()
+            img_size2 = (3, 32, 32) if "cifar" in args.dataset or args.dataset == "svhn" else (1, 28, 28)
+            num_class = 100 if args.dataset == "cifar100" else 10
+            synthesizer = AdvSynthesizer(ensemble_model, model_list, global_model, generator,
+                                        nz=nz, num_classes=num_class, img_size=img_size2,
+                                        iterations=args.g_steps, lr_g=args.lr_g,
+                                        synthesis_batch_size=args.synthesis_batch_size,
+                                        sample_batch_size=args.batch_size,
+                                        adv=args.adv, bn=args.bn, oh=args.oh,
+                                        save_dir=args.save_dir, dataset=args.dataset)
+      
         
         # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
         criterion = KLDiv(T=args.T)
