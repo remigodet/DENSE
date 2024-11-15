@@ -11,7 +11,7 @@ from torchvision import transforms
 from tqdm import tqdm
 import torchvision.utils as vutils
 from helpers.utils import ImagePool, DeepInversionHook, average_weights, kldiv
-
+from torch.utils.data import Dataset
 upsample = torch.nn.Upsample(mode='nearest', scale_factor=7)
 
 
@@ -251,14 +251,23 @@ class AdvSynthesizer():
 
 
 
-class TestSynthesizer:
-    def __init__(self, dataset, sample_batch_size) -> None:
-        self.sample_batch_size = sample_batch_size
-        self.data_loader = torch.utils.data.DataLoader(dataset, 
-                                                       batch_size=self.sample_batch_size, 
-                                                       shuffle=True,
-                                                       num_workers=4, 
-                                                       pin_memory=True)
+# class TestSynthesizer:
+#     def __init__(self, dataset, sample_batch_size) -> None:
+#         self.sample_batch_size = sample_batch_size
+#         self.data_loader = torch.utils.data.DataLoader(dataset, 
+#                                                        batch_size=self.sample_batch_size, 
+#                                                        shuffle=True,
+#                                                        num_workers=4, 
+#                                                        pin_memory=True,
+#                                                        )
+#     def gen_data(self, cur_ep):
+#         pass
+#     def get_data(self):
+#         return self.data_loader
+    
+class SynthesizerFromLoader:
+    def __init__(self, data_loader, ) -> None:
+        self.data_loader = data_loader
     def gen_data(self, cur_ep):
         pass
     def get_data(self):

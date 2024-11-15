@@ -13,7 +13,7 @@ from tqdm import tqdm
 import pdb
 
 from helpers.datasets import partition_data
-from helpers.synthesizers import AdvSynthesizer, TestSynthesizer
+from helpers.synthesizers import AdvSynthesizer, TestSynthesizer, SynthesizerFromLoader
 from helpers.utils import get_dataset, average_weights, DatasetSplit, KLDiv, setup_seed, test
 from models.generator import Generator
 from models.nets import CNNCifar, CNNMnist, CNNCifar100
@@ -349,7 +349,7 @@ def kd_train(synthesizer, model, criterion, optimizer):
         for idx, (images) in enumerate(epochs):
             optimizer.zero_grad()
             
-            images = images.cuda().float() # trying to cast to float (arrives as byte from testset ? )
+            images = images.cuda() # trying to cast to float (arrives as byte from testset ? )
             
             with torch.no_grad():
                 t_out = teacher(images)
@@ -511,10 +511,10 @@ if __name__ == '__main__':
                     print(images[0])
                     break
         # CHANGE NAME BACK
-        synthesizer2 = TestSynthesizer(
-        dataset=X_test,
-        sample_batch_size=args.batch_size
-        )
+        # synthesizer2 = TestSynthesizer(dataset=X_test,
+        # sample_batch_size=args.batch_size
+        # )
+        synthesizer2 = SynthesizerFromLoader(test_loader)
         
         # else:
         # data generator
