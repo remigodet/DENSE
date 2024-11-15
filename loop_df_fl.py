@@ -507,7 +507,6 @@ if __name__ == '__main__':
              with tqdm(synthesizer.get_data()) as epochs:
                 for idx, (images) in enumerate(epochs):
                     print(type(images))
-                    print(images.shape)
                     print(images[0])
                     break
         # CHANGE NAME BACK
@@ -536,7 +535,7 @@ if __name__ == '__main__':
         test_synth(synthesizer)
         #debug
         test_synth(synthesizer2)
-        raise
+        
         # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
         criterion = KLDiv(T=args.T)
         optimizer = torch.optim.SGD(global_model.parameters(), lr=args.lr,
