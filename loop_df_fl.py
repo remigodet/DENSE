@@ -151,8 +151,9 @@ class LocalUpdate(object):
 
                 # common part 
                 acc, test_loss = test(model, test_loader)
-                if cur_iter%(self.args.iterations //10) == 0: 
+                if cur_iter%((self.args.iterations*self.args.minibatch_size) //10) == 0: 
                     print(f"Client {client_id} Epoch {cur_iter}/{self.args.iterations} Loss: {test_loss} Acc: {acc} (LDP:{self.args.LDP})")
+                cur_iter += 1
                 # if client_id == 0:
                 #     wandb.log({'local_epoch': iter})
                 # wandb.log({'client_{}_accuracy'.format(client_id): acc})
