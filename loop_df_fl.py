@@ -138,6 +138,7 @@ class LocalUpdate(object):
         
         ##DP
         if self.args.LDP:
+            cur_iter = 0
             for X_minibatch, y_minibatch in tqdm(minibatch_loader(self.dataset)):
                 optimizer.zero_grad()
                 for X_microbatch, y_microbatch in tqdm(microbatch_loader(TensorDataset(X_minibatch, y_minibatch))):
@@ -150,6 +151,8 @@ class LocalUpdate(object):
 
                 # common part 
                 acc, test_loss = test(model, test_loader)
+                if cur_iter%(self.args.iterations //10) == 0: 
+                    print(f"Client {client_id} Epoch {cur_iter}/{self.args.iterations} Loss: {test_loss} Acc: {acc} (LDP:{self.args.LDP})")
                 # if client_id == 0:
                 #     wandb.log({'local_epoch': iter})
                 # wandb.log({'client_{}_accuracy'.format(client_id): acc})
@@ -171,6 +174,9 @@ class LocalUpdate(object):
                 
                 # common part 
                 acc, test_loss = test(model, test_loader)
+                
+                if iter%(self.args.local_ep //10) == 0: 
+                    print(f"Client {client_id} Epoch {iter}/{self.args.local_ep} Loss: {test_loss} Acc: {acc} (LDP:{self.args.LDP})")
                 # if client_id == 0:
                 #     wandb.log({'local_epoch': iter})
                 # wandb.log({'client_{}_accuracy'.format(client_id): acc})
