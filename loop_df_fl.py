@@ -382,6 +382,7 @@ def kd_train(synthesizer, model, criterion, optimizer):
                 t_out = teacher(images)
             s_out = student(images.detach())
             loss_s = criterion(s_out, t_out.detach())
+            print(loss_s) # debug
 
             loss_s.backward()
             optimizer.step()
