@@ -232,7 +232,7 @@ def args_parser():
                         help='number of total iterations in each epoch')
     parser.add_argument('--num_workers', default=4, type=int, help='num workers in dataloader, reduce to run on less RAM')
     parser.add_argument('--nz', default=256, type=int, metavar='N',
-                        help='number of total iterations in each epoch')
+                        help='size of noise for generator')
     parser.add_argument('--synthesis_batch_size', default=256, type=int)
     # Misc
     parser.add_argument('--seed', default=None, type=int,
@@ -337,33 +337,6 @@ class Ensemble(torch.nn.Module):
 
         return logits_e
 
-# class RunName():
-#     # class to name the run given args, the wandb id and a user-defined tag
-#     def __init__(self, args) -> None:
-#         self.args = args
-#         self.id = wandb.run.id
-#         print("run wandb id = ", self.id)
-        
-#     def get_run_name(self) -> str:
-#         if self.args.LDP:
-#             run_name = '{}_beta{}_nbusers{}_LDP{}_its{}_clip{}_noise{}_mini{}_micro{}_delta{}'
-#             run_name = run_name.format(self.args.dataset, 
-#                                         self.args.beta, 
-#                                         self.args.num_users, 
-#                                         self.args.LDP, 
-#                                         self.args.iterations, 
-#                                         self.args.l2_norm_clip,
-#                                         self.args.noise_multiplier,
-#                                         self.args.minibatch_size,
-#                                         self.args.microbatch_size,
-#                                         self.args.delta)
-#         else:
-#             run_name = '{}_beta{}_nbusers{}_LDP{}'
-#             run_name = run_name.format(self.args.dataset, 
-#                                         self.args.beta, 
-#                                         self.args.num_users, 
-#                                         self.args.LDP)
-#         return run_name
         
 def kd_train(synthesizer, model, criterion, optimizer):
     student, teacher = model
