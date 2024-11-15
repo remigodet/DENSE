@@ -244,7 +244,7 @@ class AdvSynthesizer():
                 optimizer.step()
                 # optimizer_mlp.step()
                 t.set_description('iters:{}, loss:{}'.format(it, loss.item()))
-            vutils.save_image(best_inputs.clone(), '1.png', normalize=True, scale_each=True, nrow=10)
+            # vutils.save_image(best_inputs.clone(), '1.png', nrow=10)
 
         # save best inputs and reset data iter
         self.data_pool.add(best_inputs)  # 生成了一个batch的数据
