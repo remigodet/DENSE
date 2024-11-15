@@ -151,7 +151,7 @@ class LocalUpdate(object):
 
                 # common part 
                 acc, test_loss = test(model, test_loader)
-                if cur_iter%((self.args.iterations*self.args.minibatch_size) //10) == 0: 
+                if cur_iter%(max(self.args.iterations*self.args.minibatch_size,50)//10) == 0: 
                     print(f"Client {client_id} Epoch {cur_iter}/{self.args.iterations} Loss: {test_loss} Acc: {acc} (LDP:{self.args.LDP})")
                 cur_iter += 1
                 # if client_id == 0:
@@ -176,7 +176,7 @@ class LocalUpdate(object):
                 # common part 
                 acc, test_loss = test(model, test_loader)
                 
-                if iter%(self.args.local_ep //10) == 0: 
+                if iter%(max(self.args.local_ep,50)//10) == 0: 
                     print(f"Client {client_id} Epoch {iter}/{self.args.local_ep} Loss: {test_loss} Acc: {acc} (LDP:{self.args.LDP})")
                 # if client_id == 0:
                 #     wandb.log({'local_epoch': iter})
@@ -532,7 +532,7 @@ if __name__ == '__main__':
                                     adv=args.adv, bn=args.bn, oh=args.oh,
                                     save_dir=args.save_dir, dataset=args.dataset)
         #debug
-        synthesizer.gen_data(1)
+        synthesizer.gen_data(0)
         test_synth(synthesizer)
         #debug
         test_synth(synthesizer2)
@@ -554,7 +554,7 @@ if __name__ == '__main__':
             bst_acc = max(acc, bst_acc)
             _best_ckpt = 'df_ckpt/{}.pth'.format(args.other)
             # only print metrics 10 times 
-            if epoch%(args.epochs//10)==0:
+            if epoch%(max(args.epochs, 50)//10)==0:
                 print(f"Epoch : {epoch} Test loss : {test_loss} Test acc : {acc} Best : {bst_acc}")
             save_checkpoint({
                 'state_dict': global_model.state_dict(),
