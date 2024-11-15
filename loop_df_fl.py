@@ -481,8 +481,9 @@ if __name__ == '__main__':
         local_weights = torch.load(f'weights/{run_name}.pkl')
         global_weights = average_weights(local_weights)
         global_model.load_state_dict(global_weights)
-        print("avg acc:")
+        
         test_acc, test_loss = test(global_model, test_loader)
+        print("avg acc:", test_acc)
         model_list = []
         for i in range(len(local_weights)):
             net = copy.deepcopy(global_model)
@@ -496,28 +497,46 @@ if __name__ == '__main__':
         global_model = get_model(args)
         # ===============================================
         # define synthetic data source for the distillation
-        if args.upper_bound: 
-            args.cur_ep = 0
-            synthesizer = TestSynthesizer(
-            dataset=X_test,
-            sample_batch_size=args.batch_size
-            )
-        else:
-            # data generator
-            nz = args.nz
-            nc = 3 if "cifar" in args.dataset or args.dataset == "svhn" else 1
-            img_size = 32 if "cifar" in args.dataset or args.dataset == "svhn" else 28
-            generator = Generator(nz=nz, ngf=64, img_size=img_size, nc=nc).cuda()
-            args.cur_ep = 0
-            img_size2 = (3, 32, 32) if "cifar" in args.dataset or args.dataset == "svhn" else (1, 28, 28)
-            num_class = 100 if args.dataset == "cifar100" else 10
-            synthesizer = AdvSynthesizer(ensemble_model, model_list, global_model, generator,
-                                        nz=nz, num_classes=num_class, img_size=img_size2,
-                                        iterations=args.g_steps, lr_g=args.lr_g,
-                                        synthesis_batch_size=args.synthesis_batch_size,
-                                        sample_batch_size=args.batch_size,
-                                        adv=args.adv, bn=args.bn, oh=args.oh,
-                                        save_dir=args.save_dir, dataset=args.dataset)
+        args.cur_ep = 0
+        
+        
+        # if args.upper_bound: 
+        
+        def test_synth(synthesizer):
+            #debug
+             with tqdm(synthesizer.get_data()) as epochs:
+                for idx, (images) in enumerate(epochs):
+                    print(type(images))
+                    print(images.shape)
+                    print(images[0])
+                    break
+        # CHANGE NAME BACK
+        synthesizer2 = TestSynthesizer(
+        dataset=X_test,
+        sample_batch_size=args.batch_size
+        )
+        
+        # else:
+        # data generator
+        nz = args.nz
+        nc = 3 if "cifar" in args.dataset or args.dataset == "svhn" else 1
+        img_size = 32 if "cifar" in args.dataset or args.dataset == "svhn" else 28
+        generator = Generator(nz=nz, ngf=64, img_size=img_size, nc=nc).cuda()
+        img_size2 = (3, 32, 32) if "cifar" in args.dataset or args.dataset == "svhn" else (1, 28, 28)
+        num_class = 100 if args.dataset == "cifar100" else 10
+        synthesizer = AdvSynthesizer(ensemble_model, model_list, global_model, generator,
+                                    nz=nz, num_classes=num_class, img_size=img_size2,
+                                    iterations=args.g_steps, lr_g=args.lr_g,
+                                    synthesis_batch_size=args.synthesis_batch_size,
+                                    sample_batch_size=args.batch_size,
+                                    adv=args.adv, bn=args.bn, oh=args.oh,
+                                    save_dir=args.save_dir, dataset=args.dataset)
+        #debug
+        synthesizer.gen_data(1)
+        test_synth(synthesizer)
+        #debug
+        test_synth(synthesizer2)
+        raise
         # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
         criterion = KLDiv(T=args.T)
         optimizer = torch.optim.SGD(global_model.parameters(), lr=args.lr,

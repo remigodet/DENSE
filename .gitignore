@@ -3,6 +3,8 @@ dataset/*
 weights/*
 wandb/*
 temp.py
+run/*
+*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
