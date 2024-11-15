@@ -13,7 +13,7 @@ from tqdm import tqdm
 import pdb
 
 from helpers.datasets import partition_data
-from helpers.synthesizers import AdvSynthesizer, TestSynthesizer, SynthesizerFromLoader
+from helpers.synthesizers import AdvSynthesizer, SynthesizerFromLoader
 from helpers.utils import get_dataset, average_weights, DatasetSplit, KLDiv, setup_seed, test
 from models.generator import Generator
 from models.nets import CNNCifar, CNNMnist, CNNCifar100
