@@ -119,7 +119,7 @@ class LocalUpdate(object):
                                        delta=training_parameters['delta'],
                                        )
             print("###########EPSILON################", epsilon)
-            
+            print("###########EPSILON################", epsilon, file=sys.stderr)
             # loaders for the data (functions)
             
             minibatch_loader, microbatch_loader = sampling.get_data_loaders(microbatch_size=training_parameters['microbatch_size'],
