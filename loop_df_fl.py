@@ -346,7 +346,7 @@ def kd_train(synthesizer, model, criterion, optimizer):
     total_loss = 0.0
     correct = 0.0
     with tqdm(synthesizer.get_data()) as epochs:
-        for idx, (images) in enumerate(epochs):
+        for idx, (images,) in enumerate(epochs):
             optimizer.zero_grad()
             
             images = images.cuda() # trying to cast to float (arrives as byte from testset ? )
