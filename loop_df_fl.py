@@ -310,7 +310,8 @@ def args_parser():
     
     # debug 
     print("===================== ARGS ============================== \n", file=sys.stderr)
-    print(vars(args), file=sys.stderr)
+    for k,v in vars(args).items():
+        print(k,v, file=sys.stderr)
     
     return args
 
@@ -368,7 +369,7 @@ def kd_train(synthesizer, model, criterion, optimizer):
         for idx, (images) in enumerate(epochs):
             optimizer.zero_grad()
             
-            images = images.cuda().float()
+            images = images.cuda().float() # trying to cast to float (arrives as byte from testset ? )
             
             with torch.no_grad():
                 t_out = teacher(images)
@@ -421,8 +422,9 @@ def get_model(args):
 if __name__ == '__main__':
     # init 
     args = args_parser()
-    print("============================ args ==================== \n", vars(args))
-    
+    print("============================ ARGS ==================== \n")
+    for k,v in vars(args).items():
+        print(k,v)
     wandb.init(config=args,
                project="ont-shot FL")
 
@@ -481,16 +483,17 @@ if __name__ == '__main__':
         # update global weights by FedAvg
         global_weights = average_weights(local_weights)
         global_model.load_state_dict(global_weights)
-        print("avg acc:")
+        
         test_acc, test_loss = test(global_model, test_loader)
+        print("avg acc:", test_acc)
         model_list = []
         for i in range(len(local_weights)):
             net = copy.deepcopy(global_model)
             net.load_state_dict(local_weights[i])
             model_list.append(net)
         ensemble_model = Ensemble(model_list)
-        print("ensemble acc:")
-        test(ensemble_model, test_loader)
+        acc, test_loss = test(ensemble_model, test_loader)
+        print("ensemble acc:", acc)
         # ===============================================
     elif args.type == "kd_train":
         # ===============================================
@@ -505,8 +508,9 @@ if __name__ == '__main__':
             net.load_state_dict(local_weights[i])
             model_list.append(net)
         ensemble_model = Ensemble(model_list)
-        print("ensemble acc:")
-        test(ensemble_model, test_loader)
+        
+        acc, test_loss = test(ensemble_model, test_loader)
+        print("ensemble acc:", acc)
         # ===============================================
         global_model = get_model(args)
         # ===============================================
@@ -549,7 +553,9 @@ if __name__ == '__main__':
             is_best = acc > bst_acc
             bst_acc = max(acc, bst_acc)
             _best_ckpt = 'df_ckpt/{}.pth'.format(args.other)
-            print("best acc:{}".format(bst_acc))
+            # only print metrics 10 times 
+            if epoch%(args.epochs//10)==0:
+                print(f"Epoch : {epoch} Test loss : {test_loss} Test acc : {acc} Best : {bst_acc}")
             save_checkpoint({
                 'state_dict': global_model.state_dict(),
                 'best_acc': float(bst_acc),
@@ -561,7 +567,10 @@ if __name__ == '__main__':
             keys=["DENSE"],
             title="Accuracy of DENSE")})
         # np.save("distill_acc_{}.npy".format(args.dataset), np.array(distill_acc)) # save accuracy
-
+        
+        
+        # print metrics 
+        print(f"Best global accuracy : {bst_acc} last {distill_acc[-10:-1]}")
         # ===============================================
     else:
         raise Exception(f"Wrong run type provided : {args.type}")

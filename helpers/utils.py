@@ -442,8 +442,8 @@ def test(model, test_loader):
 
     test_loss /= len(test_loader.dataset)
     acc = 100. * correct / len(test_loader.dataset)
-    print('\n Test_set: Average loss: {:.4f}, Accuracy: {:.4f}\n'
-          .format(test_loss, acc))
+    # print('\n Test_set: Average loss: {:.4f}, Accuracy: {:.4f}\n'
+        #   .format(test_loss, acc))
     return acc, test_loss
 
 
