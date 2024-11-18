@@ -163,7 +163,8 @@ class LocalUpdate(object):
         ## NON DP 
         else:
             
-            grad_norm_list = []
+            grad_median_list = []
+            grads = []
             
             for iter in tqdm(range(self.args.local_ep)):
                 
@@ -183,7 +184,9 @@ class LocalUpdate(object):
                     total_norm = 0.0
                 else:
                     device = parameters[0].grad.device
-                    grad_norm_list += [torch.norm(torch.stack([torch.norm(p.grad.detach(), 2.0).to(device) for p in parameters]), 2.0).item()]
+                    grads.append(torch.stack([torch.norm(p.grad.detach().to(device), 2.0) for p in parameters]))
+                    grad_median_list.append(torch.median(torch.stack([torch.norm(p.grad.detach().to(device), 2.0) for p in parameters])).item())
+                    
                 # common part 
                 acc, test_loss = test(model, test_loader)
                 
@@ -193,9 +196,13 @@ class LocalUpdate(object):
                 #     wandb.log({'local_epoch': iter})
                 # wandb.log({'client_{}_accuracy'.format(client_id): acc})
                 local_acc_list.append(acc)
-            grad_norm_avg = sum(grad_norm_list) / self.args.local_ep
-            print("-> grad_norm_list: ", grad_norm_list)
-            print("-> grad_norm_avg: ", grad_norm_avg)
+            grad_median_avg = sum(grad_median_list) / len(grad_median_list)
+            
+            grads = torch.stack(grads)
+            
+            print("-> true median: ", torch.median(grads.to(device))) # may lead to OOM ?
+            print("-> grad_norm_list: ", grad_median_list)
+            print("-> grad_norm_avg: ", grad_median_avg)
             
                 
         return model.state_dict(), np.array(local_acc_list)
@@ -331,7 +338,7 @@ def args_parser():
     # auto save dir to run name
     
     if args.save_dir == 'auto':
-        args.save_dir = f'run/{args.run_name}'
+        args.save_dir = f'run/{args.run_name}/synthesis'
     
     # debug 
     print("===================== ARGS ============================== \n", file=sys.stderr)
@@ -365,7 +372,10 @@ def kd_train(synthesizer, model, criterion, optimizer):
     correct = 0.0
     with tqdm(synthesizer.get_data()) as epochs:
         for idx, images in enumerate(epochs):
-            images = images[0] # because of test dataloader !
+            
+            if type(images) == list :
+                images = images[0] #drop labels
+                
             optimizer.zero_grad()
             
             images = images.cuda() # trying to cast to float (arrives as byte from testset ? )
@@ -602,8 +612,8 @@ if __name__ == '__main__':
             ys=[distill_acc],
             keys=["DENSE"],
             title="Accuracy of DENSE")})
-        plt.plot(xs=[ i for i in range(args.epochs) ],
-            ys=distill_acc,
+        plt.plot([ i for i in range(args.epochs) ],
+            distill_acc,
             title="Accuracy of DENSE")
         plt.xlabel('epoch')
         plt.ylabel('distillation accuracy')
