@@ -162,6 +162,9 @@ class LocalUpdate(object):
                 
         ## NON DP 
         else:
+            
+            grad_norm_list = []
+            
             for iter in tqdm(range(self.args.local_ep)):
                 
                 for batch_idx, (images, labels) in enumerate(self.train_loader):
@@ -173,7 +176,14 @@ class LocalUpdate(object):
                     # ---------------------------------------
                     loss.backward()
                     optimizer.step()
+                # compute L2 norm avg of gradients
                 
+                parameters = [p for p in model.parameters() if p.grad is not None and p.requires_grad]
+                if len(parameters) == 0:
+                    total_norm = 0.0
+                else:
+                    device = parameters[0].grad.device
+                    grad_norm_avg += [torch.norm(torch.stack([torch.norm(p.grad.detach(), 2.0).to(device) for p in parameters]), 2.0).item()]
                 # common part 
                 acc, test_loss = test(model, test_loader)
                 
@@ -183,7 +193,10 @@ class LocalUpdate(object):
                 #     wandb.log({'local_epoch': iter})
                 # wandb.log({'client_{}_accuracy'.format(client_id): acc})
                 local_acc_list.append(acc)
-                
+            grad_norm_avg = sum(grad_norm_list) / self.args.local_ep
+            print("-> grad_norm_list: ", grad_norm_list)
+            print("-> grad_norm_avg: ", grad_norm_avg)
+            
                 
         return model.state_dict(), np.array(local_acc_list)
 
