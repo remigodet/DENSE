@@ -182,6 +182,7 @@ class AdvSynthesizer():
         targets = torch.randint(low=0, high=self.num_classes, size=(self.synthesis_batch_size,))
         targets = targets.sort()[0]
         targets = targets.cuda()
+        # why reset ?? 
         reset_model(self.generator)
         optimizer = torch.optim.Adam([{'params': self.generator.parameters()}, {'params': [z]}], self.lr_g,
                                      betas=[0.5, 0.999])
@@ -248,6 +249,10 @@ class AdvSynthesizer():
 
         # save best inputs and reset data iter
         self.data_pool.add(best_inputs)  # 生成了一个batch的数据
+    
+    def get_generator(self):
+        return self.generator
+        
 
 
 

@@ -11,6 +11,7 @@ import torchvision.models as models
 import numpy as np
 from tqdm import tqdm
 import pdb
+# import matplotlib.pyplot as plt
 
 from helpers.datasets import partition_data
 from helpers.synthesizers import AdvSynthesizer, SynthesizerFromLoader
@@ -243,7 +244,7 @@ def args_parser():
                         help='seed for initializing training.')
     parser.add_argument('--other', default="", type=str,
                         help='seed for initializing training.')
-    parser.add_argument('--upper_bound', default="False", type=str, help='wheteer to use the test set as the synthetic dataset in the distillation step')
+    parser.add_argument('--upper_bound', default=None, type=str, help=" 'train' or 'test' dataset to be used in place of synthetic data for distillation")
     # Local Differential Privacy 
     parser.add_argument('--LDP', default="False", type=str, 
                         help='Whether to apply local differential privacy to the local models') # will be converted to a bool lower 
@@ -311,7 +312,7 @@ def args_parser():
             raise AssertionError(f"Some property is not properly assigned in line args: {v}")
         
     
-    args.upper_bound = str_to_bool(args.upper_bound)
+    
     args.LDP = str_to_bool(args.LDP)
     
     
@@ -371,6 +372,9 @@ def kd_train(synthesizer, model, criterion, optimizer):
 
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth'):
+    '''
+    saves only if is_best
+    '''
     if is_best:
         torch.save(state, filename)
 
@@ -418,11 +422,25 @@ if __name__ == '__main__':
     run_name = args.run_name
     print("run_name : ", run_name)
     
+    # setup directory 
+    from pathlib import Path
+    Path(f'run/{args.run_name}/weights').mkdir(parents=True, exist_ok=True)
+    Path(f'run/{args.run_name}/figures').mkdir(parents=True, exist_ok=True)    
+    Path(f'run/{args.run_name}/synthesis').mkdir(parents=True, exist_ok=True)
+    
+    # saving params of the run in text file (one file for each pythion script executed) : 
+    with open(f'run/{args.run_name}/params_{args.type}.txt', 'w') as f:
+        for key, value in vars(args).items():
+            f.write(f"{key}: {value}\n")
+    
+    
     # Load Data
     train_dataset, test_dataset, user_groups, traindata_cls_counts = partition_data(
         args.dataset, args.partition, beta=args.beta, num_users=args.num_users)
 
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size,
+                                              shuffle=False, num_workers=args.num_workers)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size,
                                               shuffle=False, num_workers=args.num_workers)
     # BUILD MODEL
 
@@ -442,8 +460,10 @@ if __name__ == '__main__':
         for idx in range(args.num_users):
             print("client {}".format(idx))
             users.append("client_{}".format(idx))
+            # provide data and args
             local_model = LocalUpdate(args=args, dataset=train_dataset,
                                       idxs=user_groups[idx])
+            # provide the model and train
             w, local_acc = local_model.update_weights(copy.deepcopy(global_model), idx)
 
             acc_list.append(local_acc)
@@ -460,7 +480,7 @@ if __name__ == '__main__':
             keys=users,
             title="Client Accuracy")})
         # torch.save(local_weights, '{}_{}.pkl'.format(name, iid))
-        torch.save(local_weights, f'weights/{run_name}.pkl')
+        torch.save(local_weights, f'run/{run_name}/weights/{run_name}_clients_weights.pkl')
         # update global weights by FedAvg
         global_weights = average_weights(local_weights)
         global_model.load_state_dict(global_weights)
@@ -478,7 +498,7 @@ if __name__ == '__main__':
         # ===============================================
     elif args.type == "kd_train":
         # ===============================================
-        local_weights = torch.load(f'weights/{run_name}.pkl')
+        local_weights = torch.load(f'run/{run_name}/weights/{run_name}_clients_weights.pkl')
         global_weights = average_weights(local_weights)
         global_model.load_state_dict(global_weights)
         
@@ -500,8 +520,11 @@ if __name__ == '__main__':
         args.cur_ep = 0
         
         
-        if args.upper_bound: 
+        if args.upper_bound == 'test': 
             synthesizer = SynthesizerFromLoader(test_loader)
+        
+        elif args.upper_bound == 'train': 
+            synthesizer = SynthesizerFromLoader(train_loader)
         
         else:
             # data generator
@@ -535,21 +558,40 @@ if __name__ == '__main__':
             distill_acc.append(acc)
             is_best = acc > bst_acc
             bst_acc = max(acc, bst_acc)
-            _best_ckpt = 'df_ckpt/{}.pth'.format(args.other)
-            # only print metrics 10 times 
-            if epoch%(max(args.epochs, 50)//10)==0:
-                print(f"Epoch : {epoch} Test loss : {test_loss} Test acc : {acc} Best : {bst_acc}")
+            
+            # save best generator
+            _best_ckpt = f'run/{args.run_name}/weights/{args.run_name}_best_generator_ckpt' #modified 
+            save_checkpoint({
+                'state_dict': synthesizer.get_generator().state_dict(),
+                'some synthetic metrics ': None, #TODO
+            }, is_best, _best_ckpt)
+            
+            # save best global model
+            _best_ckpt = f'run/{args.run_name}/weights/{args.run_name}_best_global_model_ckpt' #modified
             save_checkpoint({
                 'state_dict': global_model.state_dict(),
                 'best_acc': float(bst_acc),
             }, is_best, _best_ckpt)
+            
+            
+            # only print metrics 10 times 
+            if epoch%(max(args.epochs, 50)//10)==0:
+                print(f"Epoch : {epoch} Test loss : {test_loss} Test acc : {acc} Best : {bst_acc}")
+                
+        
             wandb.log({'accuracy': acc})
         wandb.log({"global_accuracy" : wandb.plot.line_series(
             xs=[ i for i in range(args.epochs) ],
             ys=[distill_acc],
             keys=["DENSE"],
             title="Accuracy of DENSE")})
-        # np.save("distill_acc_{}.npy".format(args.dataset), np.array(distill_acc)) # save accuracy
+        # plt.plot(xs=[ i for i in range(args.epochs) ],
+        #     ys=distill_acc,
+        #     title="Accuracy of DENSE")
+        # plt.xlabel('epoch')
+        # plt.ylabel('distillation accuracy')
+        # plt.savefig(f'run/{args.run_name}/figures/synthesis_accuracy.png') # accuracy fig
+        np.save(f"run/{args.run_name}/distill_acc.npy", np.array(distill_acc)) # save accuracy
         
         
         # print metrics 
