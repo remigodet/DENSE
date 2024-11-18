@@ -11,7 +11,7 @@ import torchvision.models as models
 import numpy as np
 from tqdm import tqdm
 import pdb
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 from helpers.datasets import partition_data
 from helpers.synthesizers import AdvSynthesizer, SynthesizerFromLoader
@@ -183,7 +183,7 @@ class LocalUpdate(object):
                     total_norm = 0.0
                 else:
                     device = parameters[0].grad.device
-                    grad_norm_avg += [torch.norm(torch.stack([torch.norm(p.grad.detach(), 2.0).to(device) for p in parameters]), 2.0).item()]
+                    grad_norm_list += [torch.norm(torch.stack([torch.norm(p.grad.detach(), 2.0).to(device) for p in parameters]), 2.0).item()]
                 # common part 
                 acc, test_loss = test(model, test_loader)
                 
@@ -230,7 +230,7 @@ def args_parser():
     parser.add_argument('--bn', default=0, type=float, help='scaling factor for BN regularization')
     parser.add_argument('--oh', default=0, type=float, help='scaling factor for one hot loss (cross entropy)')
     parser.add_argument('--act', default=0, type=float, help='scaling factor for activation loss used in DAFL')
-    parser.add_argument('--save_dir', default='run/synthesis', type=str, help='saving directory for the data pool ? ')
+    parser.add_argument('--save_dir', default='auto', type=str, help='saving directory for the data pool ? ')
     parser.add_argument('--partition', default='dirichlet', type=str)
     parser.add_argument('--beta', default=0.5, type=float,
                         help=' If beta is set to a smaller value, '
@@ -328,6 +328,10 @@ def args_parser():
     
     args.LDP = str_to_bool(args.LDP)
     
+    # auto save dir to run name
+    
+    if args.save_dir == 'auto':
+        args.save_dir = f'run/{args.run_name}'
     
     # debug 
     print("===================== ARGS ============================== \n", file=sys.stderr)
@@ -598,12 +602,12 @@ if __name__ == '__main__':
             ys=[distill_acc],
             keys=["DENSE"],
             title="Accuracy of DENSE")})
-        # plt.plot(xs=[ i for i in range(args.epochs) ],
-        #     ys=distill_acc,
-        #     title="Accuracy of DENSE")
-        # plt.xlabel('epoch')
-        # plt.ylabel('distillation accuracy')
-        # plt.savefig(f'run/{args.run_name}/figures/synthesis_accuracy.png') # accuracy fig
+        plt.plot(xs=[ i for i in range(args.epochs) ],
+            ys=distill_acc,
+            title="Accuracy of DENSE")
+        plt.xlabel('epoch')
+        plt.ylabel('distillation accuracy')
+        plt.savefig(f'run/{args.run_name}/figures/synthesis_accuracy.png') # accuracy fig
         np.save(f"run/{args.run_name}/distill_acc.npy", np.array(distill_acc)) # save accuracy
         
         
