@@ -587,11 +587,12 @@ if __name__ == '__main__':
             bst_acc = max(acc, bst_acc)
             
             # save best generator
-            _best_ckpt = f'run/{args.run_name}/weights/{args.run_name}_best_generator_ckpt' #modified 
-            save_checkpoint({
-                'state_dict': synthesizer.get_generator().state_dict(),
-                'some synthetic metrics ': None, #TODO
-            }, is_best, _best_ckpt)
+            if args.upper_bound not in ['train', 'test']:
+                _best_ckpt = f'run/{args.run_name}/weights/{args.run_name}_best_generator_ckpt' #modified 
+                save_checkpoint({
+                    'state_dict': synthesizer.get_generator().state_dict(),
+                    'some synthetic metrics ': None, #TODO
+                }, is_best, _best_ckpt)
             
             # save best global model
             _best_ckpt = f'run/{args.run_name}/weights/{args.run_name}_best_global_model_ckpt' #modified
@@ -613,10 +614,11 @@ if __name__ == '__main__':
             keys=["DENSE"],
             title="Accuracy of DENSE")})
         plt.plot([ i for i in range(args.epochs) ],
-            distill_acc,
-            title="Accuracy of DENSE")
+            distill_acc)
+        plt.title("Accuracy of DENSE")
         plt.xlabel('epoch')
         plt.ylabel('distillation accuracy')
+        plt.legend()
         plt.savefig(f'run/{args.run_name}/figures/synthesis_accuracy.png') # accuracy fig
         np.save(f"run/{args.run_name}/distill_acc.npy", np.array(distill_acc)) # save accuracy
         
