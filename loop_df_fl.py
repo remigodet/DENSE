@@ -11,9 +11,10 @@ import torchvision.models as models
 import numpy as np
 from tqdm import tqdm
 import pdb
+import matplotlib.pyplot as plt
 
 from helpers.datasets import partition_data
-from helpers.synthesizers import AdvSynthesizer, TestSynthesizer
+from helpers.synthesizers import AdvSynthesizer, SynthesizerFromLoader
 from helpers.utils import get_dataset, average_weights, DatasetSplit, KLDiv, setup_seed, test
 from models.generator import Generator
 from models.nets import CNNCifar, CNNMnist, CNNCifar100
@@ -151,7 +152,7 @@ class LocalUpdate(object):
 
                 # common part 
                 acc, test_loss = test(model, test_loader)
-                if cur_iter%((self.args.iterations*self.args.minibatch_size) //10) == 0: 
+                if cur_iter%(max(self.args.iterations*self.args.minibatch_size,50)//10) == 0: 
                     print(f"Client {client_id} Epoch {cur_iter}/{self.args.iterations} Loss: {test_loss} Acc: {acc} (LDP:{self.args.LDP})")
                 cur_iter += 1
                 # if client_id == 0:
@@ -161,6 +162,10 @@ class LocalUpdate(object):
                 
         ## NON DP 
         else:
+            
+            grad_median_list = []
+            grads = []
+            
             for iter in tqdm(range(self.args.local_ep)):
                 
                 for batch_idx, (images, labels) in enumerate(self.train_loader):
@@ -172,17 +177,33 @@ class LocalUpdate(object):
                     # ---------------------------------------
                     loss.backward()
                     optimizer.step()
+                # compute L2 norm avg of gradients
                 
+                parameters = [p for p in model.parameters() if p.grad is not None and p.requires_grad]
+                if len(parameters) == 0:
+                    total_norm = 0.0
+                else:
+                    device = parameters[0].grad.device
+                    grads.append(torch.stack([torch.norm(p.grad.detach().to(device), 2.0) for p in parameters]))
+                    grad_median_list.append(torch.median(torch.stack([torch.norm(p.grad.detach().to(device), 2.0) for p in parameters])).item())
+                    
                 # common part 
                 acc, test_loss = test(model, test_loader)
                 
-                if iter%(self.args.local_ep //10) == 0: 
+                if iter%(max(self.args.local_ep,50)//10) == 0: 
                     print(f"Client {client_id} Epoch {iter}/{self.args.local_ep} Loss: {test_loss} Acc: {acc} (LDP:{self.args.LDP})")
                 # if client_id == 0:
                 #     wandb.log({'local_epoch': iter})
                 # wandb.log({'client_{}_accuracy'.format(client_id): acc})
                 local_acc_list.append(acc)
-                
+            grad_median_avg = sum(grad_median_list) / len(grad_median_list)
+            
+            grads = torch.stack(grads)
+            
+            print("-> true median: ", torch.median(grads.to(device))) # may lead to OOM ?
+            print("-> grad_norm_list: ", grad_median_list)
+            print("-> grad_norm_avg: ", grad_median_avg)
+            
                 
         return model.state_dict(), np.array(local_acc_list)
 
@@ -216,7 +237,7 @@ def args_parser():
     parser.add_argument('--bn', default=0, type=float, help='scaling factor for BN regularization')
     parser.add_argument('--oh', default=0, type=float, help='scaling factor for one hot loss (cross entropy)')
     parser.add_argument('--act', default=0, type=float, help='scaling factor for activation loss used in DAFL')
-    parser.add_argument('--save_dir', default='run/synthesis', type=str, help='saving directory for the data pool ? ')
+    parser.add_argument('--save_dir', default='auto', type=str, help='saving directory for the data pool ? ')
     parser.add_argument('--partition', default='dirichlet', type=str)
     parser.add_argument('--beta', default=0.5, type=float,
                         help=' If beta is set to a smaller value, '
@@ -243,7 +264,7 @@ def args_parser():
                         help='seed for initializing training.')
     parser.add_argument('--other', default="", type=str,
                         help='seed for initializing training.')
-    parser.add_argument('--upper_bound', default="False", type=str, help='wheteer to use the test set as the synthetic dataset in the distillation step')
+    parser.add_argument('--upper_bound', default=None, type=str, help=" 'train' or 'test' dataset to be used in place of synthetic data for distillation")
     # Local Differential Privacy 
     parser.add_argument('--LDP', default="False", type=str, 
                         help='Whether to apply local differential privacy to the local models') # will be converted to a bool lower 
@@ -311,9 +332,13 @@ def args_parser():
             raise AssertionError(f"Some property is not properly assigned in line args: {v}")
         
     
-    args.upper_bound = str_to_bool(args.upper_bound)
+    
     args.LDP = str_to_bool(args.LDP)
     
+    # auto save dir to run name
+    
+    if args.save_dir == 'auto':
+        args.save_dir = f'run/{args.run_name}/synthesis'
     
     # debug 
     print("===================== ARGS ============================== \n", file=sys.stderr)
@@ -346,16 +371,19 @@ def kd_train(synthesizer, model, criterion, optimizer):
     total_loss = 0.0
     correct = 0.0
     with tqdm(synthesizer.get_data()) as epochs:
-        for idx, (images) in enumerate(epochs):
+        for idx, images in enumerate(epochs):
+            
+            if type(images) == list :
+                images = images[0] #drop labels
+                
             optimizer.zero_grad()
             
-            images = images.cuda().float() # trying to cast to float (arrives as byte from testset ? )
+            images = images.cuda() # trying to cast to float (arrives as byte from testset ? )
             
             with torch.no_grad():
                 t_out = teacher(images)
             s_out = student(images.detach())
             loss_s = criterion(s_out, t_out.detach())
-            print(loss_s) # debug
 
             loss_s.backward()
             optimizer.step()
@@ -371,6 +399,9 @@ def kd_train(synthesizer, model, criterion, optimizer):
 
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth'):
+    '''
+    saves only if is_best
+    '''
     if is_best:
         torch.save(state, filename)
 
@@ -418,11 +449,25 @@ if __name__ == '__main__':
     run_name = args.run_name
     print("run_name : ", run_name)
     
+    # setup directory 
+    from pathlib import Path
+    Path(f'run/{args.run_name}/weights').mkdir(parents=True, exist_ok=True)
+    Path(f'run/{args.run_name}/figures').mkdir(parents=True, exist_ok=True)    
+    Path(f'run/{args.run_name}/synthesis').mkdir(parents=True, exist_ok=True)
+    
+    # saving params of the run in text file (one file for each pythion script executed) : 
+    with open(f'run/{args.run_name}/params_{args.type}.txt', 'w') as f:
+        for key, value in vars(args).items():
+            f.write(f"{key}: {value}\n")
+    
+    
     # Load Data
-    train_dataset, test_dataset, user_groups, traindata_cls_counts, X_test = partition_data(
+    train_dataset, test_dataset, user_groups, traindata_cls_counts = partition_data(
         args.dataset, args.partition, beta=args.beta, num_users=args.num_users)
 
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size,
+                                              shuffle=False, num_workers=args.num_workers)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size,
                                               shuffle=False, num_workers=args.num_workers)
     # BUILD MODEL
 
@@ -442,8 +487,10 @@ if __name__ == '__main__':
         for idx in range(args.num_users):
             print("client {}".format(idx))
             users.append("client_{}".format(idx))
+            # provide data and args
             local_model = LocalUpdate(args=args, dataset=train_dataset,
                                       idxs=user_groups[idx])
+            # provide the model and train
             w, local_acc = local_model.update_weights(copy.deepcopy(global_model), idx)
 
             acc_list.append(local_acc)
@@ -458,9 +505,9 @@ if __name__ == '__main__':
             xs=[ i for i in range(len(acc_list[0])) ],
             ys=[ [acc_list[i]] for i in range(args.num_users) ],
             keys=users,
-            title="Client Accuacy")})
+            title="Client Accuracy")})
         # torch.save(local_weights, '{}_{}.pkl'.format(name, iid))
-        torch.save(local_weights, f'weights/{run_name}.pkl')
+        torch.save(local_weights, f'run/{run_name}/weights/{run_name}_clients_weights.pkl')
         # update global weights by FedAvg
         global_weights = average_weights(local_weights)
         global_model.load_state_dict(global_weights)
@@ -478,11 +525,12 @@ if __name__ == '__main__':
         # ===============================================
     elif args.type == "kd_train":
         # ===============================================
-        local_weights = torch.load(f'weights/{run_name}.pkl')
+        local_weights = torch.load(f'run/{run_name}/weights/{run_name}_clients_weights.pkl')
         global_weights = average_weights(local_weights)
         global_model.load_state_dict(global_weights)
-        print("avg acc:")
+        
         test_acc, test_loss = test(global_model, test_loader)
+        print("avg acc:", test_acc)
         model_list = []
         for i in range(len(local_weights)):
             net = copy.deepcopy(global_model)
@@ -496,19 +544,21 @@ if __name__ == '__main__':
         global_model = get_model(args)
         # ===============================================
         # define synthetic data source for the distillation
-        if args.upper_bound: 
-            args.cur_ep = 0
-            synthesizer = TestSynthesizer(
-            dataset=X_test,
-            sample_batch_size=args.batch_size
-            )
+        args.cur_ep = 0
+        
+        
+        if args.upper_bound == 'test': 
+            synthesizer = SynthesizerFromLoader(test_loader)
+        
+        elif args.upper_bound == 'train': 
+            synthesizer = SynthesizerFromLoader(train_loader)
+        
         else:
             # data generator
             nz = args.nz
             nc = 3 if "cifar" in args.dataset or args.dataset == "svhn" else 1
             img_size = 32 if "cifar" in args.dataset or args.dataset == "svhn" else 28
             generator = Generator(nz=nz, ngf=64, img_size=img_size, nc=nc).cuda()
-            args.cur_ep = 0
             img_size2 = (3, 32, 32) if "cifar" in args.dataset or args.dataset == "svhn" else (1, 28, 28)
             num_class = 100 if args.dataset == "cifar100" else 10
             synthesizer = AdvSynthesizer(ensemble_model, model_list, global_model, generator,
@@ -518,6 +568,8 @@ if __name__ == '__main__':
                                         sample_batch_size=args.batch_size,
                                         adv=args.adv, bn=args.bn, oh=args.oh,
                                         save_dir=args.save_dir, dataset=args.dataset)
+      
+        
         # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
         criterion = KLDiv(T=args.T)
         optimizer = torch.optim.SGD(global_model.parameters(), lr=args.lr,
@@ -533,21 +585,42 @@ if __name__ == '__main__':
             distill_acc.append(acc)
             is_best = acc > bst_acc
             bst_acc = max(acc, bst_acc)
-            _best_ckpt = 'df_ckpt/{}.pth'.format(args.other)
-            # only print metrics 10 times 
-            if epoch%(args.epochs//10)==0:
-                print(f"Epoch : {epoch} Test loss : {test_loss} Test acc : {acc} Best : {bst_acc}")
+            
+            # save best generator
+            if args.upper_bound not in ['train', 'test']:
+                _best_ckpt = f'run/{args.run_name}/weights/{args.run_name}_best_generator_ckpt' #modified 
+                save_checkpoint({
+                    'state_dict': synthesizer.get_generator().state_dict(),
+                    'some synthetic metrics ': None, #TODO
+                }, is_best, _best_ckpt)
+            
+            # save best global model
+            _best_ckpt = f'run/{args.run_name}/weights/{args.run_name}_best_global_model_ckpt' #modified
             save_checkpoint({
                 'state_dict': global_model.state_dict(),
                 'best_acc': float(bst_acc),
             }, is_best, _best_ckpt)
+            
+            
+            # only print metrics 10 times 
+            if epoch%(max(args.epochs, 50)//10)==0:
+                print(f"Epoch : {epoch} Test loss : {test_loss} Test acc : {acc} Best : {bst_acc}")
+                
+        
             wandb.log({'accuracy': acc})
         wandb.log({"global_accuracy" : wandb.plot.line_series(
             xs=[ i for i in range(args.epochs) ],
             ys=[distill_acc],
             keys=["DENSE"],
             title="Accuracy of DENSE")})
-        # np.save("distill_acc_{}.npy".format(args.dataset), np.array(distill_acc)) # save accuracy
+        plt.plot([ i for i in range(args.epochs) ],
+            distill_acc)
+        plt.title("Accuracy of DENSE")
+        plt.xlabel('epoch')
+        plt.ylabel('distillation accuracy')
+        plt.legend()
+        plt.savefig(f'run/{args.run_name}/figures/synthesis_accuracy.png') # accuracy fig
+        np.save(f"run/{args.run_name}/distill_acc.npy", np.array(distill_acc)) # save accuracy
         
         
         # print metrics 

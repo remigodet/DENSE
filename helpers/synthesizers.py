@@ -11,7 +11,7 @@ from torchvision import transforms
 from tqdm import tqdm
 import torchvision.utils as vutils
 from helpers.utils import ImagePool, DeepInversionHook, average_weights, kldiv
-
+from torch.utils.data import Dataset
 upsample = torch.nn.Upsample(mode='nearest', scale_factor=7)
 
 
@@ -182,6 +182,7 @@ class AdvSynthesizer():
         targets = torch.randint(low=0, high=self.num_classes, size=(self.synthesis_batch_size,))
         targets = targets.sort()[0]
         targets = targets.cuda()
+        # why reset ?? 
         reset_model(self.generator)
         optimizer = torch.optim.Adam([{'params': self.generator.parameters()}, {'params': [z]}], self.lr_g,
                                      betas=[0.5, 0.999])
@@ -244,21 +245,34 @@ class AdvSynthesizer():
                 optimizer.step()
                 # optimizer_mlp.step()
                 t.set_description('iters:{}, loss:{}'.format(it, loss.item()))
-            vutils.save_image(best_inputs.clone(), '1.png', normalize=True, scale_each=True, nrow=10)
+            # vutils.save_image(best_inputs.clone(), '1.png', nrow=10)
 
         # save best inputs and reset data iter
         self.data_pool.add(best_inputs)  # 生成了一个batch的数据
+    
+    def get_generator(self):
+        return self.generator
+        
 
 
 
-class TestSynthesizer:
-    def __init__(self, dataset, sample_batch_size) -> None:
-        self.sample_batch_size = sample_batch_size
-        self.data_loader = torch.utils.data.DataLoader(dataset, 
-                                                       batch_size=self.sample_batch_size, 
-                                                       shuffle=True,
-                                                       num_workers=4, 
-                                                       pin_memory=True)
+# class TestSynthesizer:
+#     def __init__(self, dataset, sample_batch_size) -> None:
+#         self.sample_batch_size = sample_batch_size
+#         self.data_loader = torch.utils.data.DataLoader(dataset, 
+#                                                        batch_size=self.sample_batch_size, 
+#                                                        shuffle=True,
+#                                                        num_workers=4, 
+#                                                        pin_memory=True,
+#                                                        )
+#     def gen_data(self, cur_ep):
+#         pass
+#     def get_data(self):
+#         return self.data_loader
+    
+class SynthesizerFromLoader:
+    def __init__(self, data_loader, ) -> None:
+        self.data_loader = data_loader
     def gen_data(self, cur_ep):
         pass
     def get_data(self):
