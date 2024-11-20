@@ -552,3 +552,13 @@ def record_net_data_stats(y_train, net_dataidx_map):
 #                         ids += 1
 #     traindata_cls_counts = record_net_data_stats(y_train, net_dataidx_map)
 #     return train_dataset, test_dataset, net_dataidx_map, traindata_cls_counts
+
+
+def loader_to_array(loader): 
+    arr = []
+    for images in loader:
+        images = images.cpu().detach().numpy().reshape(-1,2) # [bs, .,.,.]
+        arr.append(images)
+    return np.vstack(arr) #this may explode memory -> put some sampling or len reqs 
+        
+    
