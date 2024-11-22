@@ -578,7 +578,7 @@ if __name__ == '__main__':
                                     momentum=0.9)
         global_model.train()
         distill_acc = []
-        metrics_hist = None 
+        metrics_hist = [] 
         
         for epoch in tqdm(range(args.epochs)):
             # 1. Data synthesis
@@ -586,15 +586,18 @@ if __name__ == '__main__':
             
             
             # synthetic data metrics 
-            synthetic_loader = synthesizer.get_data()
-            client_loaders = [SynthesizerFromLoader(DataLoader(DatasetSplit(train_dataset, idxs),
-                                       batch_size=args.local_bs, shuffle=True, num_workers=args.num_workers)).get_data() for idxs in user_groups.values()]
-            metrics = synthetic_data_metrics.compute_metrics_federated(synthetic_loader, client_loaders) + [synthetic_data_metrics.compute_metrics_loaders(synthetic_loader, train_loader)]
-            # keeping history
-            if metrics_hist == None : 
-                metrics_hist = {key:[] for key in zip(*metrics)[0]}
-            for name, value in metrics:
-                metrics_hist[name] += [value]
+            if epoch in np.linspace(0,args.epochs-1,100, dtype=int): # TODO finetune this
+                print( np.linspace(0,args.epochs-1,100, dtype=int))
+                synthetic_loader = synthesizer.get_data()
+                client_loaders = [SynthesizerFromLoader(DataLoader(DatasetSplit(train_dataset, idxs),
+                                        batch_size=args.local_bs, shuffle=True, num_workers=args.num_workers)).get_data() for idxs in user_groups.values()]
+                train_loader_unlabeled = SynthesizerFromLoader(DataLoader(train_dataset,
+                                                                        batch_size=args.batch_size, 
+                                                                        shuffle=True, 
+                                                                        num_workers=args.num_workers)).get_data()
+                metrics = synthetic_data_metrics.compute_metrics_federated(synthetic_loader, client_loaders) + [synthetic_data_metrics.compute_metrics_loaders(synthetic_loader, train_loader_unlabeled)]
+                # keeping history
+                metrics_hist.append(metrics)
                         
             args.cur_ep += 1
             kd_train(synthesizer, [global_model, ensemble_model], criterion, optimizer)  # # kd_steps
@@ -641,9 +644,18 @@ if __name__ == '__main__':
         
         
         # print metrics 
-        for name, value_list in metrics_hist.item():
-            plt.plot(value, label=name)
-        plt.xlabel("epoch")
+        # plt.subplots(args.num_users+1)   
+        for c in range(len(metrics_hist[0])):
+            if c+1 == len(metrics_hist[0]) : 
+                plt.subplot(args.num_users+1,1,c+1, label="all clients")
+                plt.xlabel(f"all combined")
+            else: 
+                plt.subplot(args.num_users+1,1,c+1)
+                plt.xlabel(f"client {c}")
+            for m in range(len(metrics_hist[0][0])):
+                plt.plot([metrics_hist[i][c][m][1] for i in range(len(metrics_hist))], label=metrics_hist[0][c][m][0]) # list indices must be integers or slices, not str
+                
+        
         plt.legend()
         plt.savefig(f'run/{args.run_name}/figures/synthesis_metrics.png')         
         print(f"Best global accuracy : {bst_acc} last {distill_acc[-10:-1]}")
