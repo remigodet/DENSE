@@ -271,10 +271,11 @@ class AdvSynthesizer():
 #         return self.data_loader
     
 class SynthesizerFromLoader:
-    def __init__(self, data_loader, ) -> None:
+    def __init__(self, data_loader) -> None:
         self.data_loader = data_loader
     def gen_data(self, cur_ep):
         pass
     def get_data(self):
-        return self.data_loader
+        for images in self.data_loader:
+            yield images[0] 
         
