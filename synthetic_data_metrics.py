@@ -11,8 +11,8 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # TODO finetune this 
-METRIC_SAMPLING_LIM = 200
-METRIC_LOOP_LIM = 10
+METRIC_SAMPLING_LIM = 20
+METRIC_LOOP_LIM = 2
 
 # print("METRIC_LOOP_LIM", METRIC_LOOP_LIM)
 # print("METRIC_SAMPLING_LIM", METRIC_SAMPLING_LIM)
@@ -71,7 +71,8 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     original_data = loader_to_array(original_dataloader)
     synthetic_data = loader_to_array(synthetic_dataloader)
     
-    n = min(len(synthetic_data), len(original_data), METRIC_SAMPLING_LIM*METRIC_LOOP_LIM)
+    print(f"debug len synth {len(synthetic_data)} len origin {len(original_data)} - {100*METRIC_SAMPLING_LIM*METRIC_LOOP_LIM}") #  if n too low -> a lot of bias in the PRD curve 
+    n = min(len(synthetic_data), len(original_data), 100*METRIC_SAMPLING_LIM*METRIC_LOOP_LIM)
     synthetic_data = synthetic_data[:n]
     original_data = original_data[:n]
     precision, recall = precision_recall.compute_prd_from_embedding(synthetic_data,
@@ -81,9 +82,11 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     metrics.append(("PRD F score (beta=8)", fmax_score))
     metrics.append(("PRD 1/F score (beta=8)", fmax_inv_score))
     
-    # precision_recall.plot(list(zip(precision, recall)), out_path="test_prd_curve") #doesnt work !  
+    # precision_recall.plot(list(zip(precision, recall)), out_path="test_prd_curve") #doesn't work !  
     if args:
         plt.plot(precision, recall) 
+        plt.xlim(0,1)
+        plt.ylim(0,1)
         plt.savefig(f"run/{args.run_name}/figures/{args.cur_ep}_prd_curve")
         plt.close()    
     return metrics
@@ -100,7 +103,7 @@ def compute_metrics_federated(synthetic_dataloader, client_loaders, args=None):
 def loader_to_array(loader): 
     arr = []
     for images in loader:
-        images = images.cpu().detach().numpy().reshape(-1,2) # [bs, .,.,.]
+        images = images.cpu().detach().numpy().reshape(images.shape[0], -1) # [bs, .*.*.]
         arr.append(images)
     return np.vstack(arr) #this may explode memory -> put some sampling or len reqs 
 

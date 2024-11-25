@@ -38,7 +38,9 @@ class LocalUpdate(object):
         self.dataset = dataset
         self.args = args
         self.train_loader = DataLoader(DatasetSplit(dataset, idxs),
-                                       batch_size=self.args.local_bs, shuffle=True, num_workers=self.args.num_workers)
+                                       batch_size=self.args.local_bs, 
+                                       shuffle=True, 
+                                       num_workers=self.args.num_workers) 
 
     def update_weights(self, model, client_id):
         model.train()
@@ -548,7 +550,6 @@ if __name__ == '__main__':
         # define synthetic data source for the distillation
         args.cur_ep = 0
         
-        
         if args.upper_bound == 'test': 
             synthesizer = SynthesizerFromLoader(test_loader)
         
@@ -579,25 +580,26 @@ if __name__ == '__main__':
         global_model.train()
         distill_acc = []
         metrics_hist = [] 
+        # synthetic data metric loaders (no labels)
+        client_loaders = [SynthesizerFromLoader(DataLoader(DatasetSplit(train_dataset, idxs),
+                                                                    batch_size=args.local_bs, 
+                                                                    shuffle=True, 
+                                                                    num_workers=args.num_workers)).get_data() for idxs in user_groups.values()] # dont change the seed from the training phase ...
+        train_loader_unlabeled = SynthesizerFromLoader(train_loader).get_data()
         
         for epoch in tqdm(range(args.epochs)):
             # 1. Data synthesis
             synthesizer.gen_data(args.cur_ep)  # g_steps
             
-            
-            # synthetic data metrics 
+            # synthetic data metrics             
             if epoch in np.linspace(0,args.epochs-1,100, dtype=int): # TODO finetune this
                 synthetic_loader = synthesizer.get_data()
-                client_loaders = [SynthesizerFromLoader(DataLoader(DatasetSplit(train_dataset, idxs),
-                                        batch_size=args.local_bs, shuffle=True, num_workers=args.num_workers)).get_data() for idxs in user_groups.values()]
-                train_loader_unlabeled = SynthesizerFromLoader(DataLoader(train_dataset,
-                                                                        batch_size=args.batch_size, 
-                                                                        shuffle=True, 
-                                                                        num_workers=args.num_workers)).get_data()
-                metrics = synthetic_data_metrics.compute_metrics_federated(synthetic_loader, client_loaders, args=args) + [synthetic_data_metrics.compute_metrics_loaders(synthetic_loader, train_loader_unlabeled, args=args)]
+                metrics = synthetic_data_metrics.compute_metrics_federated(synthetic_loader, client_loaders, args=args) 
+                metrics.append(synthetic_data_metrics.compute_metrics_loaders(synthetic_loader, train_loader_unlabeled, args=args))
                 # keeping history
                 metrics_hist.append(metrics)
                         
+            # distillation training 
             args.cur_ep += 1
             kd_train(synthesizer, [global_model, ensemble_model], criterion, optimizer)  # # kd_steps
             acc, test_loss = test(global_model, test_loader)
