@@ -1,5 +1,4 @@
 # single file to compute all synthetic data metrics !
-from torch.nn import KLDivLoss
 import torch
 import numpy as np
 import precision_recall
@@ -12,8 +11,11 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # TODO finetune this 
-METRIC_SAMPLING_LIM = 10
-METRIC_LOOP_LIM = 3
+METRIC_SAMPLING_LIM = 200
+METRIC_LOOP_LIM = 10
+
+# print("METRIC_LOOP_LIM", METRIC_LOOP_LIM)
+# print("METRIC_SAMPLING_LIM", METRIC_SAMPLING_LIM)
 
 def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None):
     '''
@@ -82,7 +84,7 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     # precision_recall.plot(list(zip(precision, recall)), out_path="test_prd_curve") #doesnt work !  
     if args:
         plt.plot(precision, recall) 
-        plt.savefig(f"run/{args.run_name}/figures/prd_curve")
+        plt.savefig(f"run/{args.run_name}/figures/{args.cur_ep}_prd_curve")
         plt.close()    
     return metrics
 
