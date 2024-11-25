@@ -11,7 +11,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # TODO finetune this 
-METRIC_SAMPLING_LIM = 20
+METRIC_SAMPLING_LIM = 200
 METRIC_LOOP_LIM = 2
 
 # print("METRIC_LOOP_LIM", METRIC_LOOP_LIM)

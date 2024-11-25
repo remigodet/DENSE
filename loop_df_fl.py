@@ -678,7 +678,10 @@ if __name__ == '__main__':
             import seaborn as sns 
             with sns.color_palette("viridis", n_colors=len(metrics_hist)):
                 for i in range(len(metrics_hist)):
-                    plt.plot(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1]) # list indices must be integers or slices, not str
+                    if i%10==0:
+                        plt.plot(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1], label=f"epoch {i+1}") # list indices must be integers or slices, not str
+                    else:
+                        plt.plot(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1]) # list indices must be integers or slices, not str
             plt.xlim(0,1)
             plt.ylim(0,1)
             plt.xlabel('recall')
