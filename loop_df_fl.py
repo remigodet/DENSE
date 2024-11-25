@@ -38,7 +38,9 @@ class LocalUpdate(object):
         self.dataset = dataset
         self.args = args
         self.train_loader = DataLoader(DatasetSplit(dataset, idxs),
-                                       batch_size=self.args.local_bs, shuffle=True, num_workers=self.args.num_workers)
+                                       batch_size=self.args.local_bs, 
+                                       shuffle=True, 
+                                       num_workers=self.args.num_workers) 
 
     def update_weights(self, model, client_id):
         model.train()
@@ -548,7 +550,6 @@ if __name__ == '__main__':
         # define synthetic data source for the distillation
         args.cur_ep = 0
         
-        
         if args.upper_bound == 'test': 
             synthesizer = SynthesizerFromLoader(test_loader)
         
@@ -579,26 +580,26 @@ if __name__ == '__main__':
         global_model.train()
         distill_acc = []
         metrics_hist = [] 
+        # synthetic data metric loaders (no labels)
+        client_loaders = [SynthesizerFromLoader(DataLoader(DatasetSplit(train_dataset, idxs),
+                                                                    batch_size=args.local_bs, 
+                                                                    shuffle=True, 
+                                                                    num_workers=args.num_workers)).get_data() for idxs in user_groups.values()] # dont change the seed from the training phase ...
+        train_loader_unlabeled = SynthesizerFromLoader(train_loader).get_data()
         
         for epoch in tqdm(range(args.epochs)):
             # 1. Data synthesis
             synthesizer.gen_data(args.cur_ep)  # g_steps
             
-            
-            # synthetic data metrics 
+            # synthetic data metrics             
             if epoch in np.linspace(0,args.epochs-1,100, dtype=int): # TODO finetune this
-                print( np.linspace(0,args.epochs-1,100, dtype=int))
                 synthetic_loader = synthesizer.get_data()
-                client_loaders = [SynthesizerFromLoader(DataLoader(DatasetSplit(train_dataset, idxs),
-                                        batch_size=args.local_bs, shuffle=True, num_workers=args.num_workers)).get_data() for idxs in user_groups.values()]
-                train_loader_unlabeled = SynthesizerFromLoader(DataLoader(train_dataset,
-                                                                        batch_size=args.batch_size, 
-                                                                        shuffle=True, 
-                                                                        num_workers=args.num_workers)).get_data()
-                metrics = synthetic_data_metrics.compute_metrics_federated(synthetic_loader, client_loaders) + [synthetic_data_metrics.compute_metrics_loaders(synthetic_loader, train_loader_unlabeled)]
+                metrics = synthetic_data_metrics.compute_metrics_federated(synthetic_loader, client_loaders, args=args) 
+                metrics.append(synthetic_data_metrics.compute_metrics_loaders(synthetic_loader, train_loader_unlabeled, args=args))
                 # keeping history
                 metrics_hist.append(metrics)
                         
+            # distillation training 
             args.cur_ep += 1
             kd_train(synthesizer, [global_model, ensemble_model], criterion, optimizer)  # # kd_steps
             acc, test_loss = test(global_model, test_loader)
@@ -633,18 +634,20 @@ if __name__ == '__main__':
             ys=[distill_acc],
             keys=["DENSE"],
             title="Accuracy of DENSE")})
+        
+        # plot distillation accuracy
+        plt.clf()
+        plt.title("Accuracy of DENSE")
         plt.plot([ i for i in range(args.epochs) ],
             distill_acc)
-        plt.title("Accuracy of DENSE")
         plt.xlabel('epoch')
         plt.ylabel('distillation accuracy')
         plt.legend()
         plt.savefig(f'run/{args.run_name}/figures/synthesis_accuracy.png') # accuracy fig
         np.save(f"run/{args.run_name}/distill_acc.npy", np.array(distill_acc)) # save accuracy
         
-        
-        # print metrics 
-        # plt.subplots(args.num_users+1)   
+        # plot metrics 
+        plt.clf()
         for c in range(len(metrics_hist[0])):
             if c+1 == len(metrics_hist[0]) : 
                 plt.subplot(args.num_users+1,1,c+1, label="all clients")
@@ -652,12 +655,38 @@ if __name__ == '__main__':
             else: 
                 plt.subplot(args.num_users+1,1,c+1)
                 plt.xlabel(f"client {c}")
-            for m in range(len(metrics_hist[0][0])):
+            for m in range(len(metrics_hist[0][0])-2):
                 plt.plot([metrics_hist[i][c][m][1] for i in range(len(metrics_hist))], label=metrics_hist[0][c][m][0]) # list indices must be integers or slices, not str
-                
-        
+        plt.title("Synthesis metrics")
         plt.legend()
         plt.savefig(f'run/{args.run_name}/figures/synthesis_metrics.png')         
+        
+        # plot PRD curves
+        plt.clf()
+        # plt.title("PRD curves")
+        for c in range(len(metrics_hist[0])):
+            plt.clf()
+            
+            if c+1 == len(metrics_hist[0]) : 
+                # plt.subplot(args.num_users+1,1,c+1, label="all clients")
+                label = f"all_combined"
+            else: 
+                # plt.subplot(args.num_users+1,1,c+1)
+                label = f"client{c}"
+                
+            plt.xlabel(label)
+            import seaborn as sns 
+            with sns.color_palette("viridis", n_colors=len(metrics_hist)):
+                for i in range(len(metrics_hist)):
+                    plt.plot(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1]) # list indices must be integers or slices, not str
+            plt.xlim(0,1)
+            plt.ylim(0,1)
+            plt.xlabel('recall')
+            plt.ylabel('precision')
+            plt.legend()
+            plt.savefig(f'run/{args.run_name}/figures/synthesis_PRDs_{label}.png') 
+        
+        
         print(f"Best global accuracy : {bst_acc} last {distill_acc[-10:-1]}")
         # ===============================================
     else:

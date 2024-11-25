@@ -13,7 +13,7 @@ import torchvision.utils as vutils
 from helpers.utils import ImagePool, DeepInversionHook, average_weights, kldiv
 from torch.utils.data import Dataset
 upsample = torch.nn.Upsample(mode='nearest', scale_factor=7)
-
+from torch.utils.data.dataloader import default_collate
 
 class MultiTransform:
     """Create two crops of the same image"""
@@ -256,26 +256,26 @@ class AdvSynthesizer():
 
 
 
-# class TestSynthesizer:
-#     def __init__(self, dataset, sample_batch_size) -> None:
-#         self.sample_batch_size = sample_batch_size
-#         self.data_loader = torch.utils.data.DataLoader(dataset, 
-#                                                        batch_size=self.sample_batch_size, 
-#                                                        shuffle=True,
-#                                                        num_workers=4, 
-#                                                        pin_memory=True,
-#                                                        )
-#     def gen_data(self, cur_ep):
-#         pass
-#     def get_data(self):
-#         return self.data_loader
-    
+# def drop_label_collate_fn(batch):
+#     batch = [elem[0] for elem in batch]
+#     return torch.stack(batch)
+
+def drop_label_collate_fn2(batch):
+    batch = [elem[0] for elem in batch]
+    return default_collate(batch)
+
+# def drop_label_collate_fn_decorator(collate_fn):
+#     def new_collate_fn(batch):
+#         batch = [elem[0] for elem in batch]
+#         return collate_fn(batch)
+#     return new_collate_fn
+      
 class SynthesizerFromLoader:
-    def __init__(self, data_loader) -> None:
-        self.data_loader = data_loader
-    def gen_data(self, cur_ep):
-        pass
+    def __init__(self, data_loader, drop_labels=True) -> None:
+        self.data_loader = copy.copy(data_loader)
+        if drop_labels:
+            self.data_loader.collate_fn = drop_label_collate_fn2
     def get_data(self):
-        for images in self.data_loader:
-            yield images[0] 
-        
+        return self.data_loader
+    def gen_data(self, x):
+        pass 
