@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 import warnings
 warnings.filterwarnings('ignore')
+
 # TODO finetune this 
 METRIC_SAMPLING_LIM = 10
 METRIC_LOOP_LIM = 3
@@ -67,7 +68,7 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     original_data = loader_to_array(original_dataloader)
     synthetic_data = loader_to_array(synthetic_dataloader)
     
-    n = min(len(synthetic_data), len(original_data), METRIC_SAMPLING_LIM) # this may be excessive (for testing) # TODO
+    n = min(len(synthetic_data), len(original_data), METRIC_SAMPLING_LIM*METRIC_LOOP_LIM)
     synthetic_data = synthetic_data[:n]
     original_data = original_data[:n]
     precision, recall = precision_recall.compute_prd_from_embedding(synthetic_data,

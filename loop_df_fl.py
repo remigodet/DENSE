@@ -594,7 +594,7 @@ if __name__ == '__main__':
                                                                         batch_size=args.batch_size, 
                                                                         shuffle=True, 
                                                                         num_workers=args.num_workers)).get_data()
-                metrics = synthetic_data_metrics.compute_metrics_federated(synthetic_loader, client_loaders) + [synthetic_data_metrics.compute_metrics_loaders(synthetic_loader, train_loader_unlabeled)]
+                metrics = synthetic_data_metrics.compute_metrics_federated(synthetic_loader, client_loaders, args=args) + [synthetic_data_metrics.compute_metrics_loaders(synthetic_loader, train_loader_unlabeled, args=args)]
                 # keeping history
                 metrics_hist.append(metrics)
                         
