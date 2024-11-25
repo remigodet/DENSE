@@ -587,7 +587,6 @@ if __name__ == '__main__':
             
             # synthetic data metrics 
             if epoch in np.linspace(0,args.epochs-1,100, dtype=int): # TODO finetune this
-                print( np.linspace(0,args.epochs-1,100, dtype=int))
                 synthetic_loader = synthesizer.get_data()
                 client_loaders = [SynthesizerFromLoader(DataLoader(DatasetSplit(train_dataset, idxs),
                                         batch_size=args.local_bs, shuffle=True, num_workers=args.num_workers)).get_data() for idxs in user_groups.values()]

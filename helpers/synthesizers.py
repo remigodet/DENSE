@@ -256,26 +256,17 @@ class AdvSynthesizer():
 
 
 
-# class TestSynthesizer:
-#     def __init__(self, dataset, sample_batch_size) -> None:
-#         self.sample_batch_size = sample_batch_size
-#         self.data_loader = torch.utils.data.DataLoader(dataset, 
-#                                                        batch_size=self.sample_batch_size, 
-#                                                        shuffle=True,
-#                                                        num_workers=4, 
-#                                                        pin_memory=True,
-#                                                        )
-#     def gen_data(self, cur_ep):
-#         pass
-#     def get_data(self):
-#         return self.data_loader
+def drop_label_collate_fn(batch):
+            batch = [elem[0] for elem in batch]
+            return torch.stack(batch)
     
+      
 class SynthesizerFromLoader:
-    def __init__(self, data_loader) -> None:
-        self.data_loader = data_loader
-    def gen_data(self, cur_ep):
-        pass
+    def __init__(self, data_loader, drop_labels=True) -> None:
+        self.loader = data_loader
+        if drop_labels:
+            self.loader.collate_fn = drop_label_collate_fn
     def get_data(self):
-        for images in self.data_loader:
-            yield images[0] 
-        
+        return self.loader
+    def gen_data(self, x):
+        pass 
