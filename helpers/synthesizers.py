@@ -263,10 +263,10 @@ def drop_label_collate_fn(batch):
       
 class SynthesizerFromLoader:
     def __init__(self, data_loader, drop_labels=True) -> None:
-        self.loader = data_loader
+        self.data_loader = data_loader
         if drop_labels:
-            self.loader.collate_fn = drop_label_collate_fn
+            self.data_loader.collate_fn = drop_label_collate_fn
     def get_data(self):
-        return self.loader
+        return self.data_loader
     def gen_data(self, x):
         pass 
