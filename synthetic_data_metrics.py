@@ -6,6 +6,7 @@ import precision_recall
 # from helpers.utils import loader_to_array
 from torchmetrics.image.fid import FrechetInceptionDistance
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 import warnings
 warnings.filterwarnings('ignore')
