@@ -66,12 +66,12 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     metrics.append((f"FID on {features} features", fid_res.item()))
     
     # precision recall   (taken from google gan metrics)
-    # TODO the synthetic data loader must be reset ?
+    
     # TODO loader_to_array might be too slow ... 
     original_data = loader_to_array(original_dataloader)
     synthetic_data = loader_to_array(synthetic_dataloader)
     
-    print(f"debug len synth {len(synthetic_data)} len origin {len(original_data)} - {100*METRIC_SAMPLING_LIM*METRIC_LOOP_LIM}") #  if n too low -> a lot of bias in the PRD curve 
+    # if n too low -> a lot of bias in the PRD curve 
     n = min(len(synthetic_data), len(original_data), 100*METRIC_SAMPLING_LIM*METRIC_LOOP_LIM)
     synthetic_data = synthetic_data[:n]
     original_data = original_data[:n]
@@ -82,12 +82,17 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     metrics.append(("PRD F score (beta=8)", fmax_score))
     metrics.append(("PRD 1/F score (beta=8)", fmax_inv_score))
     
+    metrics.append(("precision", precision))
+    metrics.append(("recall", recall))
     # precision_recall.plot(list(zip(precision, recall)), out_path="test_prd_curve") #doesn't work !  
+    
     if args:
         plt.plot(precision, recall) 
         plt.xlim(0,1)
         plt.ylim(0,1)
-        plt.savefig(f"run/{args.run_name}/figures/{args.cur_ep}_prd_curve")
+        plt.xlabel('recall')
+        plt.ylabel('precision')
+        plt.savefig(f"run/{args.run_name}/figures/{args.cur_ep}_all_prd_curve")
         plt.close()    
     return metrics
 

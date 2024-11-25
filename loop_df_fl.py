@@ -634,18 +634,20 @@ if __name__ == '__main__':
             ys=[distill_acc],
             keys=["DENSE"],
             title="Accuracy of DENSE")})
+        
+        # plot distillation accuracy
+        plt.clf()
+        plt.title("Accuracy of DENSE")
         plt.plot([ i for i in range(args.epochs) ],
             distill_acc)
-        plt.title("Accuracy of DENSE")
         plt.xlabel('epoch')
         plt.ylabel('distillation accuracy')
         plt.legend()
         plt.savefig(f'run/{args.run_name}/figures/synthesis_accuracy.png') # accuracy fig
         np.save(f"run/{args.run_name}/distill_acc.npy", np.array(distill_acc)) # save accuracy
         
-        
-        # print metrics 
-        # plt.subplots(args.num_users+1)   
+        # plot metrics 
+        plt.clf()
         for c in range(len(metrics_hist[0])):
             if c+1 == len(metrics_hist[0]) : 
                 plt.subplot(args.num_users+1,1,c+1, label="all clients")
@@ -653,12 +655,38 @@ if __name__ == '__main__':
             else: 
                 plt.subplot(args.num_users+1,1,c+1)
                 plt.xlabel(f"client {c}")
-            for m in range(len(metrics_hist[0][0])):
+            for m in range(len(metrics_hist[0][0])-2):
                 plt.plot([metrics_hist[i][c][m][1] for i in range(len(metrics_hist))], label=metrics_hist[0][c][m][0]) # list indices must be integers or slices, not str
-                
-        
+        plt.title("Synthesis metrics")
         plt.legend()
         plt.savefig(f'run/{args.run_name}/figures/synthesis_metrics.png')         
+        
+        # plot PRD curves
+        plt.clf()
+        # plt.title("PRD curves")
+        for c in range(len(metrics_hist[0])):
+            plt.clf()
+            
+            if c+1 == len(metrics_hist[0]) : 
+                # plt.subplot(args.num_users+1,1,c+1, label="all clients")
+                label = f"all_combined"
+            else: 
+                # plt.subplot(args.num_users+1,1,c+1)
+                label = f"client{c}"
+                
+            plt.xlabel(label)
+            import seaborn as sns 
+            with sns.color_palette("viridis", n_colors=len(metrics_hist)):
+                for i in range(len(metrics_hist)):
+                    plt.plot(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1]) # list indices must be integers or slices, not str
+            plt.xlim(0,1)
+            plt.ylim(0,1)
+            plt.xlabel('recall')
+            plt.ylabel('precision')
+            plt.legend()
+            plt.savefig(f'run/{args.run_name}/figures/synthesis_PRDs_{label}.png') 
+        
+        
         print(f"Best global accuracy : {bst_acc} last {distill_acc[-10:-1]}")
         # ===============================================
     else:
