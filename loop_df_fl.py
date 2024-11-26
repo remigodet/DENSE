@@ -699,4 +699,6 @@ if __name__ == '__main__':
 
 # TODO try to add noise to upper bound train -> see how it degrades 
 # TODO change alpha-beta ... *
-# TODO reuse clients from previous runs 
+# TODO reuse clients from previous runs -> new branch !!! 
+
+# TODO run on nef with new prd on fid metrics ... 
