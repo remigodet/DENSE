@@ -695,3 +695,7 @@ if __name__ == '__main__':
     else:
         raise Exception(f"Wrong run type provided : {args.type}")
 
+
+
+# TODO try to add noise to upper bound train -> see how it degrades 
+# TODO change alpha-beta ... 

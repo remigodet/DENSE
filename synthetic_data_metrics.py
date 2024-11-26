@@ -57,6 +57,7 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
         images = images[:METRIC_SAMPLING_LIM]
         images = images * 5 
         images = images.type(torch.uint8)
+        # TODO try to .cuda() 
         # print("synth", i, type(images), images.shape) #(.,3,32,32)
         fid.update(images, real=False)
         i+=1
@@ -67,7 +68,8 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     
     # precision recall   (taken from google gan metrics)
     
-    # TODO loader_to_array might be too slow ... 
+    # TODO loader_to_array might be too slow ...
+    # TODO do precision recall on Inception features from FID 
     original_data = loader_to_array(original_dataloader)
     synthetic_data = loader_to_array(synthetic_dataloader)
     

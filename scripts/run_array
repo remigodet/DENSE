@@ -9,7 +9,7 @@
 # Note : quoting style of parameters matters, follow the example
 # Notify me ! 
 #OAR --notify mail:remi.godet@inria.fr
-#OAR -l gpunum=1,walltime=8
+#OAR -l gpunum=1,walltime=100
 #OAR -p gpu='YES' and gpucapability>='5.0'
 #
 # The job is submitted to the default queue
