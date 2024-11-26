@@ -4,16 +4,13 @@ import numpy as np
 import precision_recall
 # from helpers.utils import loader_to_array
 from torchmetrics.image.fid import FrechetInceptionDistance
-from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 import warnings
 warnings.filterwarnings('ignore')
 
 # TODO finetune this 
-METRIC_SAMPLING_LIM = 200
-METRIC_LOOP_LIM = 2
-
+METRIC_SAMPLING_LIM = 5000
 # print("METRIC_LOOP_LIM", METRIC_LOOP_LIM)
 # print("METRIC_SAMPLING_LIM", METRIC_SAMPLING_LIM)
 
@@ -37,46 +34,59 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     # res = torch.mean(torch.stack(res))
     # metrics.append(("KLDiv", res))
     
+    # =======================
     # FID (taken from torchmetrics)
+    # =======================
+    
+    
+    # hyperparams and cast to gpu 
     features = 64
-    fid = FrechetInceptionDistance(feature=features)
+    fid = FrechetInceptionDistance(feature=features).cuda()
+    fid.inception.to(fid.device)
+    print("fid device", fid.device)
+    
     i = 0
     # collect all feature representations 
     for images in original_dataloader:
-        images = images[:METRIC_SAMPLING_LIM]
-        images = images * 5 
-        images = images.type(torch.uint8)
-        # print("original", i, type(images), images.shape) #(.,3,32,32)
+        images = images[:METRIC_SAMPLING_LIM-i]
+        i+=len(images)
+        images = images * 255 # back in the range of uint integers
+        images = images.type(torch.uint8)# no .cuda ! 
+        images = images.cuda()
         fid.update(images, real=True)
-        i+=1
-        if i>METRIC_LOOP_LIM : break
         
-    
+        if i>=METRIC_SAMPLING_LIM : break
     i=0
     for images in synthetic_dataloader:
-        images = images[:METRIC_SAMPLING_LIM]
-        images = images * 5 
+        images = images[:METRIC_SAMPLING_LIM-i]
+        i+=len(images)
+        images = images * 255 
         images = images.type(torch.uint8)
-        # TODO try to .cuda() 
-        # print("synth", i, type(images), images.shape) #(.,3,32,32)
+        images = images.cuda()
         fid.update(images, real=False)
-        i+=1
-        if i>METRIC_LOOP_LIM : break
+        
+        if i>=METRIC_SAMPLING_LIM : break
     # compute fid 
     fid_res = fid.compute()
     metrics.append((f"FID on {features} features", fid_res.item()))
     
+    # =======================
     # precision recall   (taken from google gan metrics)
+    # =======================
     
     # TODO loader_to_array might be too slow ...
-    # TODO do precision recall on Inception features from FID 
-    original_data = loader_to_array(original_dataloader)
-    synthetic_data = loader_to_array(synthetic_dataloader)
     
-    # if n too low -> a lot of bias in the PRD curve 
-    n = min(len(synthetic_data), len(original_data), 100*METRIC_SAMPLING_LIM*METRIC_LOOP_LIM)
-    synthetic_data = synthetic_data[:n]
-    original_data = original_data[:n]
+    # original_data = loader_to_array(original_dataloader)
+    # synthetic_data = loader_to_array(synthetic_dataloader)
+    # # if n too low -> a lot of bias in the PRD curve 
+    # n = min(len(synthetic_data), len(original_data), 100*METRIC_SAMPLING_LIM*METRIC_LOOP_LIM)
+    # synthetic_data = synthetic_data[:n]
+    # original_data = original_data[:n]
+    
+    # using Inception features     
+    synthetic_data = loader_to_array(fid.fake_features)
+    original_data = loader_to_array(fid.real_features)
+    
     precision, recall = precision_recall.compute_prd_from_embedding(synthetic_data,
                                                                     original_data,
                                                                     num_runs=10)
@@ -86,8 +96,8 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     
     metrics.append(("precision", precision))
     metrics.append(("recall", recall))
-    # precision_recall.plot(list(zip(precision, recall)), out_path="test_prd_curve") #doesn't work !  
     
+    # precision_recall.plot(list(zip(precision, recall)), out_path="test_prd_curve") #doesn't work !  
     if args:
         plt.plot(precision, recall) 
         plt.xlim(0,1)
@@ -95,7 +105,7 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
         plt.xlabel('recall')
         plt.ylabel('precision')
         plt.savefig(f"run/{args.run_name}/figures/{args.cur_ep}_all_prd_curve")
-        plt.close()    
+        plt.close()
     return metrics
 
 def compute_metrics_federated(synthetic_dataloader, client_loaders, args=None):
@@ -103,7 +113,10 @@ def compute_metrics_federated(synthetic_dataloader, client_loaders, args=None):
     Compute all metrics implemented for 1 synthetic dataset to a list of client synthetic datasets
     '''
     res = []
-    for client_loader in tqdm(client_loaders, desc='client metrics'):
+    i = 0
+    for client_loader in client_loaders:
+        i += 1
+        print(f'client {i}')
         res.append(compute_metrics_loaders(synthetic_dataloader, client_loader, args=None))
     return res
 
