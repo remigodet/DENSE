@@ -582,7 +582,7 @@ if __name__ == '__main__':
         metrics_hist = [] 
         # synthetic data metric loaders (no labels)
         client_loaders = [SynthesizerFromLoader(DataLoader(DatasetSplit(train_dataset, idxs),
-                                                                    batch_size=args.local_bs, 
+                                                                    batch_size=args.batch_size, # so all loaders have the same batch size in metrics 
                                                                     shuffle=True, 
                                                                     num_workers=args.num_workers)).get_data() for idxs in user_groups.values()] # dont change the seed from the training phase ...
         train_loader_unlabeled = SynthesizerFromLoader(train_loader).get_data()
@@ -695,3 +695,10 @@ if __name__ == '__main__':
     else:
         raise Exception(f"Wrong run type provided : {args.type}")
 
+
+
+# TODO try to add noise to upper bound train -> see how it degrades 
+# TODO change alpha-beta ... *
+# TODO reuse clients from previous runs -> new branch !!! 
+
+# TODO run on nef with new prd on fid metrics ... 
