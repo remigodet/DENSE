@@ -322,7 +322,10 @@ def args_parser():
                         type=str,
                         default=None,
                         help='an identifier to find the run later')
-        
+    parser.add_argument('--client_run_name', 
+                        type=str,
+                        default=None,
+                        help='an identifier to find the clients later')
     # parse 
     args = parser.parse_args()
     
@@ -455,7 +458,7 @@ if __name__ == '__main__':
     
     # setup directory 
     from pathlib import Path
-    Path(f'run/{args.run_name}/weights').mkdir(parents=True, exist_ok=True)
+    Path(f'weights').mkdir(parents=True, exist_ok=True)
     Path(f'run/{args.run_name}/figures').mkdir(parents=True, exist_ok=True)    
     Path(f'run/{args.run_name}/synthesis').mkdir(parents=True, exist_ok=True)
     
@@ -487,31 +490,36 @@ if __name__ == '__main__':
     assert type is not None
     
     if args.type == "pretrain":
-        # ===============================================
-        for idx in range(args.num_users):
-            print("client {}".format(idx))
-            users.append("client_{}".format(idx))
-            # provide data and args
-            local_model = LocalUpdate(args=args, dataset=train_dataset,
-                                      idxs=user_groups[idx])
-            # provide the model and train
-            w, local_acc = local_model.update_weights(copy.deepcopy(global_model), idx)
+        # check if clients already exists : 
+        try:
+            local_weights = torch.load(f'weights/{args.client_run_name}_clients_weights.pkl')
+            print(f"The clients DO exist, loading the client weights: weights/{args.client_run_name}_clients_weights.pkl !")
+        except:
+            print("The clients do NOT exist, proceeding to training the clients! ")
+            for idx in range(args.num_users):
+                print("client {}".format(idx))
+                users.append("client_{}".format(idx))
+                # provide data and args
+                local_model = LocalUpdate(args=args, dataset=train_dataset,
+                                        idxs=user_groups[idx])
+                # provide the model and train
+                w, local_acc = local_model.update_weights(copy.deepcopy(global_model), idx)
 
-            acc_list.append(local_acc)
-            local_weights.append(copy.deepcopy(w))
+                acc_list.append(local_acc)
+                local_weights.append(copy.deepcopy(w))
 
-        # wandb 
-
-        for i in range(len(acc_list[0])):
-            wandb.log({"client_{}_acc".format(users[c]):acc_list[c][i] for c in range(args.num_users)})
-        # np.save("client_{}_acc.npy".format(args.num_users), acc_list)
-        wandb.log({"client_accuracy" : wandb.plot.line_series(
-            xs=[ i for i in range(len(acc_list[0])) ],
-            ys=[ [acc_list[i]] for i in range(args.num_users) ],
-            keys=users,
-            title="Client Accuracy")})
-        # torch.save(local_weights, '{}_{}.pkl'.format(name, iid))
-        torch.save(local_weights, f'run/{run_name}/weights/{run_name}_clients_weights.pkl')
+            # wandb 
+            for i in range(len(acc_list[0])):
+                wandb.log({"client_{}_acc".format(users[c]):acc_list[c][i] for c in range(args.num_users)})
+            # np.save("client_{}_acc.npy".format(args.num_users), acc_list)
+            wandb.log({"client_accuracy" : wandb.plot.line_series(
+                xs=[ i for i in range(len(acc_list[0])) ],
+                ys=[ [acc_list[i]] for i in range(args.num_users) ],
+                keys=users,
+                title="Client Accuracy")})
+        
+            # torch.save(local_weights, '{}_{}.pkl'.format(name, iid))
+            torch.save(local_weights, f'weights/{args.client_run_name}_clients_weights.pkl')
         # update global weights by FedAvg
         global_weights = average_weights(local_weights)
         global_model.load_state_dict(global_weights)
@@ -529,7 +537,7 @@ if __name__ == '__main__':
         # ===============================================
     elif args.type == "kd_train":
         # ===============================================
-        local_weights = torch.load(f'run/{run_name}/weights/{run_name}_clients_weights.pkl')
+        local_weights = torch.load(f'weights/{args.client_run_name}_clients_weights.pkl')
         global_weights = average_weights(local_weights)
         global_model.load_state_dict(global_weights)
         
@@ -609,14 +617,14 @@ if __name__ == '__main__':
             
             # save best generator
             if args.upper_bound not in ['train', 'test']:
-                _best_ckpt = f'run/{args.run_name}/weights/{args.run_name}_best_generator_ckpt' #modified 
+                _best_ckpt = f'weights/{args.run_name}_best_generator_ckpt' #modified 
                 save_checkpoint({
                     'state_dict': synthesizer.get_generator().state_dict(),
                     'some synthetic metrics ': None, #TODO
                 }, is_best, _best_ckpt)
             
             # save best global model
-            _best_ckpt = f'run/{args.run_name}/weights/{args.run_name}_best_global_model_ckpt' #modified
+            _best_ckpt = f'weights/{args.run_name}_best_global_model_ckpt' #modified
             save_checkpoint({
                 'state_dict': global_model.state_dict(),
                 'best_acc': float(bst_acc),
