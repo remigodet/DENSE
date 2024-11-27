@@ -66,7 +66,7 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
         fid.update(images, real=False)
         
         if i>=METRIC_SAMPLING_LIM : break
-    # compute fid 
+    # compute fid - may have more real data -> better distribution estimate
     fid_res = fid.compute()
     metrics.append((f"FID on {features} features", fid_res.item()))
     
@@ -79,13 +79,15 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     # original_data = loader_to_array(original_dataloader)
     # synthetic_data = loader_to_array(synthetic_dataloader)
     # # if n too low -> a lot of bias in the PRD curve 
-    # n = min(len(synthetic_data), len(original_data), 100*METRIC_SAMPLING_LIM*METRIC_LOOP_LIM)
-    # synthetic_data = synthetic_data[:n]
-    # original_data = original_data[:n]
+    
     
     # using Inception features     
     synthetic_data = loader_to_array(fid.fake_features)
     original_data = loader_to_array(fid.real_features)
+    
+    n = min(len(synthetic_data), len(original_data)) # because we generate much less synthetic data -> it will skew the clusters 
+    synthetic_data = synthetic_data[:n]
+    original_data = original_data[:n]
     
     precision, recall = precision_recall.compute_prd_from_embedding(synthetic_data,
                                                                     original_data,
