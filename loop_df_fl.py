@@ -698,7 +698,18 @@ if __name__ == '__main__':
             plt.legend()
             plt.savefig(f'run/{args.run_name}/figures/synthesis_PRDs_{label}.png') 
         
+        
         print(f"Best global accuracy : {bst_acc} last {distill_acc[-10:-1]}")
+        
+        
+        
+        import pickle
+        
+        with open(f'run/{args.run_name}/metrics.pickle', 'wb') as handle:
+            pickle.dump(metrics_hist, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        
+        
         # ===============================================
     else:
         raise Exception(f"Wrong run type provided : {args.type}")
