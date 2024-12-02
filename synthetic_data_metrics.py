@@ -43,7 +43,7 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     features = 64
     fid = FrechetInceptionDistance(feature=features).cuda()
     fid.inception.to(fid.device)
-    print("fid device", fid.device)
+    # print("fid device", fid.device)
     
     i = 0
     # collect all feature representations 
@@ -118,7 +118,7 @@ def compute_metrics_federated(synthetic_dataloader, client_loaders, args=None):
     i = 0
     for client_loader in client_loaders:
         i += 1
-        print(f'client {i}')
+        # print(f'client {i}')
         res.append(compute_metrics_loaders(synthetic_dataloader, client_loader, args=None))
     return res
 
