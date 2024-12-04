@@ -12,7 +12,7 @@ import random
 def load_data(dataset):
     data_dir = './dataset'
     if dataset == "mnist":
-        train_dataset = datasets.MNIST(data_dir, train=True,
+        train_dataset = datasets.MNIST(data_dir, train=True,download=True,
                                        transform=transforms.Compose(
                                            [transforms.ToTensor()]))
         test_dataset = datasets.MNIST(data_dir, train=False,
@@ -20,18 +20,18 @@ def load_data(dataset):
                                           transforms.ToTensor(),
                                       ]))
     elif dataset == "fmnist":
-        train_dataset = datasets.FashionMNIST(data_dir, train=True,
+        train_dataset = datasets.FashionMNIST(data_dir, train=True,download=True,
                                               transform=transforms.Compose(
                                                   [transforms.ToTensor()]))
-        test_dataset = datasets.FashionMNIST(data_dir, train=False,
+        test_dataset = datasets.FashionMNIST(data_dir, train=False,download=True,
                                              transform=transforms.Compose([
                                                  transforms.ToTensor(),
                                              ]))
     elif dataset == "svhn":
-        train_dataset = datasets.SVHN(data_dir, split="train",
+        train_dataset = datasets.SVHN(data_dir, split="train",download=True,
                                       transform=transforms.Compose(
                                           [transforms.ToTensor()]))
-        test_dataset = datasets.SVHN(data_dir, split="test",
+        test_dataset = datasets.SVHN(data_dir, split="test",download=True,
                                      transform=transforms.Compose([
                                          transforms.ToTensor(),
                                      ]))
@@ -48,7 +48,7 @@ def load_data(dataset):
                                             transforms.ToTensor(),
                                         ]))
     elif dataset == "cifar100":
-        train_dataset = datasets.CIFAR100(data_dir, train=True,
+        train_dataset = datasets.CIFAR100(data_dir, train=True,download=True,
                                           transform=transforms.Compose(
                                               [
                                                   transforms.RandomCrop(32, padding=4),
