@@ -1,1 +1,2 @@
-mnist_vanilla   loop_df_fl.py dpdense3 0.01 mnist_cnn mnist 0.5 1 5 0.5 1.1 10000 1000 False 200 200 1e-5 64 256 1e-3 1.0 1.0 20 auto mnist 1 200 30 0 0.005 0.5 1 no_upper mnist
+cifar100_vanilla   loop_df_fl.py dpdense3 0.01 cifar100_cnn cifar100 0.5 1 5 0.5 1.1 10000 1000 False 200 200 1e-5 64 256 1e-3 1.0 1.0 20 auto cifar100 1 200 30 0 0.005 0.5 1 no_upper cifar100
+cifar100_vanilla   loop_df_fl.py dpdense3 0.01 cifar100_cnn cifar100 0.1 1 5 0.5 1.1 10000 1000 False 200 200 1e-5 64 256 1e-3 1.0 1.0 20 auto cifar100 1 200 30 0 0.005 0.5 1 no_upper cifar100
