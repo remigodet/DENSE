@@ -642,7 +642,8 @@ if __name__ == '__main__':
             ys=[distill_acc],
             keys=["DENSE"],
             title="Accuracy of DENSE")})
-        
+        # plots 
+        print("starting metrics plots")
         # plot distillation accuracy
         plt.clf()
         plt.title("Accuracy of DENSE")

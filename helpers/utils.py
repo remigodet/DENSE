@@ -354,7 +354,7 @@ def _collect_all_images(root, postfix=['png', 'jpg', 'jpeg', 'JPEG']):
                     images.append(os.path.join(dirpath, f))
     return images
 
-
+from PIL import UnidentifiedImageError
 class UnlabeledImageDataset(torch.utils.data.Dataset):
     def __init__(self, root, transform=None):
         self.root = os.path.abspath(root)
@@ -362,7 +362,15 @@ class UnlabeledImageDataset(torch.utils.data.Dataset):
         self.transform = transform
 
     def __getitem__(self, idx):
-        img = Image.open(self.images[idx])
+        loop =  True
+        while loop: #sometimes we try to open the same image ? (maybe when i run different scripts on nef...)
+            try:
+                im = Image.open(self.images[idx])
+                img = im.copy()
+                im.close()
+                loop = False
+            except UnidentifiedImageError as e:
+                print("PIL.UnidentifiedImageError", e)
         if self.transform:
             img = self.transform(img)
         return img

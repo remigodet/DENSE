@@ -42,30 +42,12 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     # hyperparams and cast to gpu 
     features = 64
     fid = FrechetInceptionDistance(feature=features).cuda()
-    fid.inception.to(fid.device)
-    # print("fid device", fid.device)
+    fid.inception.to(fid.device)    
     
-    i = 0
     # collect all feature representations 
-    for images in original_dataloader:
-        images = images[:METRIC_SAMPLING_LIM-i]
-        i+=len(images)
-        images = images * 255 # back in the range of uint integers
-        images = images.type(torch.uint8)# no .cuda ! 
-        images = images.cuda()
-        fid.update(images, real=True)
-        
-        if i>=METRIC_SAMPLING_LIM : break
-    i=0
-    for images in synthetic_dataloader:
-        images = images[:METRIC_SAMPLING_LIM-i]
-        i+=len(images)
-        images = images * 255 
-        images = images.type(torch.uint8)
-        images = images.cuda()
-        fid.update(images, real=False)
-        
-        if i>=METRIC_SAMPLING_LIM : break
+    add_to_fid(original_dataloader, fid, True)
+    add_to_fid(synthetic_dataloader, fid, False)
+   
     # compute fid - may have more real data -> better distribution estimate
     fid_res = fid.compute()
     metrics.append((f"FID on {features} features", fid_res.item()))
@@ -109,6 +91,20 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
         plt.savefig(f"run/{args.run_name}/figures/{args.cur_ep}_all_prd_curve")
         plt.close()
     return metrics
+
+def add_to_fid(original_dataloader, fid, real):
+    i=0
+    for images in original_dataloader:
+        images = images[:METRIC_SAMPLING_LIM-i]
+        i+=len(images)
+        images = images * 255 # back in the range of uint integers
+        images = images.type(torch.uint8)# no .cuda ! 
+        images = images.cuda()
+        if images.shape[1] != 3:
+            images = images.expand(-1,3,-1,-1)
+        fid.update(images, real=real)
+        
+        if i>=METRIC_SAMPLING_LIM : break
 
 def compute_metrics_federated(synthetic_dataloader, client_loaders, args=None):
     '''
