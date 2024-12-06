@@ -192,6 +192,7 @@ def compute_prd_from_embedding(
     recalls = []
     for _ in range(num_runs):
         eval_dist, ref_dist = _cluster_into_bins(eval_data, ref_data, num_clusters)
+        print(eval_dist, ref_dist) # debug
         precision, recall = compute_prd(eval_dist, ref_dist, num_angles)
         precisions.append(precision)
         recalls.append(recall)
