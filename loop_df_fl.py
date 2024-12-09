@@ -27,6 +27,7 @@ from models.vit import deit_tiny_patch16_224
 import wandb
 
 import synthetic_data_metrics
+from metrics_animated import GifCreator
 
 warnings.filterwarnings('ignore')
 upsample = torch.nn.Upsample(mode='nearest', scale_factor=7)
@@ -671,9 +672,11 @@ if __name__ == '__main__':
         plt.savefig(f'run/{args.run_name}/figures/synthesis_metrics.png')         
         
         # plot PRD curves
-        plt.clf()
-        # plt.title("PRD curves")
+       
+        # looping over clients
         for c in range(len(metrics_hist[0])):
+             # init
+            
             plt.clf()
             
             if c+1 == len(metrics_hist[0]) : 
@@ -682,12 +685,13 @@ if __name__ == '__main__':
             else: 
                 # plt.subplot(args.num_users+1,1,c+1)
                 label = f"client{c}"
-                
+            # initialize gif creator 
+            gif_creator = GifCreator(title=label)
             plt.xlabel(label)
-            # import seaborn as sns 
-            # with sns.color_palette("viridis", n_colors=len(metrics_hist)):
+            
             num_colors = len(metrics_hist)
             for i in range(num_colors):
+                gif_creator.add_data(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1])
                 if i%10==0:
                     plt.plot(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1], label=f"epoch {i+1}", color=(0, i/num_colors, 0)) # list indices must be integers or slices, not str
                 else:
@@ -698,8 +702,10 @@ if __name__ == '__main__':
             plt.ylabel('precision')
             plt.legend()
             plt.savefig(f'run/{args.run_name}/figures/synthesis_PRDs_{label}.png') 
+
+            gif_creator.create_gif(f'run/{args.run_name}/figures/synthesis_PRDs_{label}_animated.gif')
         
-        
+        # global acc
         print(f"Best global accuracy : {bst_acc} last {distill_acc[-10:-1]}")
         
         

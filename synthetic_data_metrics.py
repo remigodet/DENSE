@@ -82,14 +82,7 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
     metrics.append(("recall", recall))
     
     # precision_recall.plot(list(zip(precision, recall)), out_path="test_prd_curve") #doesn't work !  
-    if args:
-        plt.plot(precision, recall) 
-        plt.xlim(0,1)
-        plt.ylim(0,1)
-        plt.xlabel('recall')
-        plt.ylabel('precision')
-        plt.savefig(f"run/{args.run_name}/figures/{args.cur_ep}_all_prd_curve")
-        plt.close()
+    
     return metrics
 
 def add_to_fid(original_dataloader, fid, real):
