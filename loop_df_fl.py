@@ -346,7 +346,7 @@ def args_parser():
     # auto save dir to run name
     
     if args.save_dir == 'auto':
-        args.save_dir = f'run/{args.run_name}/synthesis'
+        args.save_dir = f'run/synthesis/{args.run_name}'
     
     # debug 
     print("===================== ARGS ============================== \n", file=sys.stderr)
@@ -461,7 +461,7 @@ if __name__ == '__main__':
     from pathlib import Path
     Path(f'weights').mkdir(parents=True, exist_ok=True)
     Path(f'run/{args.run_name}/figures').mkdir(parents=True, exist_ok=True)    
-    Path(f'run/{args.run_name}/synthesis').mkdir(parents=True, exist_ok=True)
+    Path(f'run/synthesis/{args.run_name}').mkdir(parents=True, exist_ok=True)
     
     # saving params of the run in text file (one file for each pythion script executed) : 
     with open(f'run/{args.run_name}/params_{args.type}.txt', 'w') as f:

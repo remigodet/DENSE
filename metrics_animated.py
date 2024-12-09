@@ -12,9 +12,20 @@ class GifCreator:
         self.X.append(x)
         self.Y.append(y)
         
+    def get_color(self,i):
+        color = [0.,0.,0.]
+        color_idx = int(i/(len(self.X)/3))
+        color[color_idx] = (i-color_idx*(len(self.X)//3))/(len(self.X)//3)
+        print(color)
+        return (color[0], color[2], color[1])
+    
     def step(self, i):
         self.line, = self.ax.plot(self.X[i], self.Y[i], animated=True)
-        self.line.set_color((0, i/len(self.X), 0))
+        
+        if len(self.X)>10:
+            self.line.set_color(self.get_color(i))
+        else: # cannot get 3 colors (division by 0 risk)
+            self.line.set_color((0, i/len(self.X), 0))
         if i%10==0:
             self.line.set_label(f'epoch {i+1}')
         plt.legend()
@@ -28,16 +39,16 @@ class GifCreator:
         if self.title:
             plt.title(self.title)
         self.line, = self.ax.plot(self.X[0], self.Y[0], animated=True)
-        animated_fig = animation.FuncAnimation(self.fig, self.step,  frames=10, interval=200, repeat_delay=10,)
+        animated_fig = animation.FuncAnimation(self.fig, self.step,  frames=len(self.X), interval=len(self.X)//10+1, repeat_delay=10,)
         animated_fig.save(path_to_save)
     
 if __name__=='__main__':
-    
+    import random as rd
     creator = GifCreator(title='test')
     
-    for i in range(10):
+    for i in range(5):
         x = [j for j in range(10)]
-        y = [i/10 for j in range(10)]
-        
+        a  = rd.random()
+        y = [i/100 + a  for j in range(10)]
         creator.add_data(x,y)
     creator.create_gif('test.gif')
