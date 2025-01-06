@@ -15,12 +15,11 @@ class GifCreator:
         color = [0.,0.,0.]
         color_idx = int(i/(len(self.X)/3))
         color[color_idx] = max((i-color_idx*(len(self.X)//3))/(len(self.X)//3), 0.5)
-        # print(color)
         return (color[0], color[2], color[1])
     
     def step(self, i):
         if i>=len(self.X):
-            return None
+            return self.line
         self.line, = self.ax.plot(self.X[i], self.Y[i], animated=True)
         
         if len(self.X)>10:
@@ -32,6 +31,7 @@ class GifCreator:
             self.line.set_label(f'epoch {i+1}')
         plt.legend()
         return self.line,
+    
     def init(self):
         pass
     def create_gif(self, path_to_save):
@@ -44,7 +44,7 @@ class GifCreator:
         if self.title:
             plt.title(self.title)
         # self.line, = self.ax.plot(self.X[0], self.Y[0], animated=True)
-        animated_fig = animation.FuncAnimation(self.fig, self.step,  frames=len(self.X)+100, init_func=self.init, interval=len(self.X)//10+1, repeat=False, repeat_delay=2000,)
+        animated_fig = animation.FuncAnimation(self.fig, self.step,  frames=len(self.X)+100, init_func=self.init, interval=50, repeat=False)
         animated_fig.save(path_to_save)
 if __name__=='__main__':
     import random as rd

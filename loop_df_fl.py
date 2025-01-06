@@ -12,6 +12,7 @@ import numpy as np
 from tqdm import tqdm
 import pdb
 import matplotlib.pyplot as plt
+import pickle
 
 from helpers.datasets import partition_data
 from helpers.synthesizers import AdvSynthesizer, SynthesizerFromLoader
@@ -594,7 +595,10 @@ if __name__ == '__main__':
                                                                     batch_size=args.batch_size, # so all loaders have the same batch size in metrics 
                                                                     shuffle=True, 
                                                                     num_workers=args.num_workers)).get_data() for idxs in user_groups.values()] # dont change the seed from the training phase ...
-        train_loader_unlabeled = SynthesizerFromLoader(train_loader).get_data()
+        # what is the comparison for the fidelity metrics (non-client, but 1 dataset)
+        # can be train (samples used in training the clients)
+        # or test to see the difference (only same distribution)
+        original_data_loader_unlabeled = SynthesizerFromLoader(test_loader).get_data()
         
         for epoch in tqdm(range(args.epochs)):
             # 1. Data synthesis
@@ -604,7 +608,7 @@ if __name__ == '__main__':
             if epoch in np.linspace(0,args.epochs-1,100, dtype=int): # TODO finetune this
                 synthetic_loader = synthesizer.get_data()
                 metrics = synthetic_data_metrics.compute_metrics_federated(synthetic_loader, client_loaders, args=args) 
-                metrics.append(synthetic_data_metrics.compute_metrics_loaders(synthetic_loader, train_loader_unlabeled, args=args))
+                metrics.append(synthetic_data_metrics.compute_metrics_loaders(synthetic_loader, original_data_loader_unlabeled, args=args))
                 # keeping history
                 metrics_hist.append(metrics)
                         
@@ -656,7 +660,18 @@ if __name__ == '__main__':
         plt.savefig(f'run/{args.run_name}/figures/synthesis_accuracy.png') # accuracy fig
         np.save(f"run/{args.run_name}/distill_acc.npy", np.array(distill_acc)) # save accuracy
         
-        # plot metrics 
+        # saving metrics
+        with open(f'run/{args.run_name}/metrics.pickle', 'wb') as handle:
+            pickle.dump(metrics_hist, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            
+    elif args.type == "plot" or args.type=="kd_train":     # for local execution of saved runs or after kd training
+        # plot metrics
+        # load metrics 
+        with open(f'run/{args.run_name}/metrics.pickle', 'rb') as handle:
+            metrics_hist = pickle.load(handle)
+            
+        print(metrics_hist)
+        # plotting synthesis metrics
         plt.clf()
         for c in range(len(metrics_hist[0])):
             if c+1 == len(metrics_hist[0]) : 
@@ -710,10 +725,7 @@ if __name__ == '__main__':
         
         
         
-        import pickle
         
-        with open(f'run/{args.run_name}/metrics.pickle', 'wb') as handle:
-            pickle.dump(metrics_hist, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         
         
