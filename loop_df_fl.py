@@ -440,6 +440,25 @@ def get_model(args):
     return global_model
 
 
+def load_data_and_build_model(get_model, args):
+    train_dataset, test_dataset, user_groups, traindata_cls_counts = partition_data(
+        args.dataset, args.partition, beta=args.beta, num_users=args.num_users)
+
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size,
+                                              shuffle=False, num_workers=args.num_workers)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size,
+                                              shuffle=False, num_workers=args.num_workers)
+    # BUILD MODEL
+
+    global_model = get_model(args)
+    bst_acc = -1
+    description = "inference acc={:.4f}% loss={:.2f}, best_acc = {:.2f}%"
+    local_weights = []
+    global_model.train()
+    acc_list = []
+    users = []
+    return train_dataset,user_groups,test_loader,train_loader,global_model,bst_acc,acc_list,users
+
 if __name__ == '__main__':
     # init 
     args = args_parser()
@@ -449,7 +468,9 @@ if __name__ == '__main__':
     wandb.init(config=args,
                project="ont-shot FL")
 
-
+    # check type is specified by user 
+    assert args.type is not None
+    # stup random seed 
     setup_seed(args.seed)
     # pdb.set_trace()
     
@@ -469,27 +490,9 @@ if __name__ == '__main__':
         for key, value in vars(args).items():
             f.write(f"{key}: {value}\n")
     
-    
-    # Load Data
-    train_dataset, test_dataset, user_groups, traindata_cls_counts = partition_data(
-        args.dataset, args.partition, beta=args.beta, num_users=args.num_users)
-
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size,
-                                              shuffle=False, num_workers=args.num_workers)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size,
-                                              shuffle=False, num_workers=args.num_workers)
-    # BUILD MODEL
-
-    global_model = get_model(args)
-    bst_acc = -1
-    description = "inference acc={:.4f}% loss={:.2f}, best_acc = {:.2f}%"
-    local_weights = []
-    global_model.train()
-    acc_list = []
-    users = []
-    
-    # check type is specified by user 
-    assert type is not None
+    if args.type != "plot":
+        # Load data abd build model if needed
+        train_dataset, user_groups, test_loader, train_loader, global_model, bst_acc, acc_list, users = load_data_and_build_model(get_model, args)
     
     if args.type == "pretrain":
         # check if clients already exists : 
@@ -598,7 +601,8 @@ if __name__ == '__main__':
         # what is the comparison for the fidelity metrics (non-client, but 1 dataset)
         # can be train (samples used in training the clients)
         # or test to see the difference (only same distribution)
-        original_data_loader_unlabeled = SynthesizerFromLoader(test_loader).get_data()
+        print("using TRAIN as comparison dataset for fidelity metrics")
+        original_data_loader_unlabeled = SynthesizerFromLoader(train_loader).get_data() # TODO revert this !!! 
         
         for epoch in tqdm(range(args.epochs)):
             # 1. Data synthesis
@@ -660,17 +664,20 @@ if __name__ == '__main__':
         plt.savefig(f'run/{args.run_name}/figures/synthesis_accuracy.png') # accuracy fig
         np.save(f"run/{args.run_name}/distill_acc.npy", np.array(distill_acc)) # save accuracy
         
+        # global acc
+        print(f"Best global accuracy : {bst_acc} last {distill_acc[-10:-1]}")
+        
         # saving metrics
         with open(f'run/{args.run_name}/metrics.pickle', 'wb') as handle:
             pickle.dump(metrics_hist, handle, protocol=pickle.HIGHEST_PROTOCOL)
-            
-    elif args.type == "plot" or args.type=="kd_train":     # for local execution of saved runs or after kd training
-        # plot metrics
+    
+    # plot metrics        
+    if args.type == "plot" or args.type=="kd_train":     # for local execution of saved runs or after kd training
         # load metrics 
         with open(f'run/{args.run_name}/metrics.pickle', 'rb') as handle:
             metrics_hist = pickle.load(handle)
-            
-        print(metrics_hist)
+        # print(metrics_hist)
+        
         # plotting synthesis metrics
         plt.clf()
         for c in range(len(metrics_hist[0])):
@@ -719,16 +726,7 @@ if __name__ == '__main__':
             plt.savefig(f'run/{args.run_name}/figures/synthesis_PRDs_{label}.png') 
 
             gif_creator.create_gif(f'run/{args.run_name}/figures/synthesis_PRDs_{label}_animated.gif')
-        
-        # global acc
-        print(f"Best global accuracy : {bst_acc} last {distill_acc[-10:-1]}")
-        
-        
-        
-        
-
-        
-        
+               
         # ===============================================
     else:
         raise Exception(f"Wrong run type provided : {args.type}")
