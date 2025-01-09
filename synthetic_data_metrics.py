@@ -10,7 +10,8 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # TODO finetune this 
-METRIC_SAMPLING_LIM = 5000
+# 5000 seems a bit low 
+METRIC_SAMPLING_LIM = 20000
 # print("METRIC_LOOP_LIM", METRIC_LOOP_LIM)
 # print("METRIC_SAMPLING_LIM", METRIC_SAMPLING_LIM)
 
@@ -88,7 +89,7 @@ def compute_metrics_loaders(synthetic_dataloader, original_dataloader, args=None
 def add_to_fid(original_dataloader, fid, real):
     i=0
     for images in original_dataloader:
-        images = images[:METRIC_SAMPLING_LIM-i]
+        images = images[:METRIC_SAMPLING_LIM-i] # sample until METRIC_SAMPLING_LIM reached (i=nb of images already sampled)
         i+=len(images)
         images = images * 255 # back in the range of uint integers
         images = images.type(torch.uint8)# no .cuda ! 
