@@ -4,6 +4,7 @@ weights/*
 wandb/*
 temp.py
 run/*
+distillation_experiments/*
 *.png
 
 # Byte-compiled / optimized / DLL files

@@ -405,7 +405,7 @@ def kd_train(synthesizer, model, criterion, optimizer):
             acc = correct / len(synthesizer.data_loader.dataset) * 100
 
             epochs.set_description(description.format(avg_loss, acc))
-
+    return avg_loss, acc 
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth'):
     '''
@@ -592,6 +592,8 @@ if __name__ == '__main__':
                                     momentum=0.9)
         global_model.train()
         distill_acc = []
+        distill_avg_loss = []
+        distill_correct_acc = []
         metrics_hist = [] 
         # synthetic data metric loaders (no labels)
         client_loaders = [SynthesizerFromLoader(DataLoader(DatasetSplit(train_dataset, idxs),
@@ -618,7 +620,11 @@ if __name__ == '__main__':
                         
             # distillation training 
             args.cur_ep += 1
-            kd_train(synthesizer, [global_model, ensemble_model], criterion, optimizer)  # # kd_steps
+            
+            avg_loss, acc = kd_train(synthesizer, [global_model, ensemble_model], criterion, optimizer)  # # kd_steps
+            distill_avg_loss.append(avg_loss)
+            distill_correct_acc.append(acc)
+            
             acc, test_loss = test(global_model, test_loader)
             distill_acc.append(acc)
             is_best = acc > bst_acc
@@ -651,18 +657,39 @@ if __name__ == '__main__':
             ys=[distill_acc],
             keys=["DENSE"],
             title="Accuracy of DENSE")})
+        
         # plots 
         print("starting metrics plots")
-        # plot distillation accuracy
+        
+        # plot distillation test accuracy
         plt.clf()
-        plt.title("Accuracy of DENSE")
-        plt.plot([ i for i in range(args.epochs) ],
-            distill_acc)
+        plt.title("Distillation Test Accuracy")
+        plt.plot([ i for i in range(args.epochs) ], distill_acc)
         plt.xlabel('epoch')
-        plt.ylabel('distillation accuracy')
+        plt.ylabel('distillation test accuracy')
+        plt.legend()
+        plt.savefig(f'run/{args.run_name}/figures/synthesis_test_accuracy.png') # accuracy fig
+        np.save(f"run/{args.run_name}/distill_acc.npy", np.array(distill_acc)) # save accuracy
+        
+        # plot distillation loss 
+        plt.clf()
+        plt.title("Distillation Loss")
+        plt.plot([ i for i in range(args.epochs) ], distill_avg_loss)
+        plt.xlabel('epoch')
+        plt.ylabel('distillation loss')
+        plt.legend()
+        plt.savefig(f'run/{args.run_name}/figures/synthesis_loss.png') # accuracy fig
+        np.save(f"run/{args.run_name}/distill_avg_loss.npy", np.array(distill_avg_loss)) # save accuracy
+        
+        # plot distillation accuracy 
+        plt.clf()
+        plt.title("Distillation Accuracy (Ensemble vs Global Model)")
+        plt.plot([ i for i in range(args.epochs) ], distill_correct_acc)
+        plt.xlabel('epoch')
+        plt.ylabel('distillation acc')
         plt.legend()
         plt.savefig(f'run/{args.run_name}/figures/synthesis_accuracy.png') # accuracy fig
-        np.save(f"run/{args.run_name}/distill_acc.npy", np.array(distill_acc)) # save accuracy
+        np.save(f"run/{args.run_name}/distill_correct_acc.npy", np.array(distill_correct_acc)) # save accuracy
         
         # global acc
         print(f"Best global accuracy : {bst_acc} last {distill_acc[-10:-1]}")
@@ -676,7 +703,7 @@ if __name__ == '__main__':
         # load metrics 
         with open(f'run/{args.run_name}/metrics.pickle', 'rb') as handle:
             metrics_hist = pickle.load(handle)
-        # print(metrics_hist)
+        print("start plotting fidelity metrics")
         
         # plotting synthesis metrics
         plt.clf()
@@ -727,9 +754,7 @@ if __name__ == '__main__':
 
             gif_creator.create_gif(f'run/{args.run_name}/figures/synthesis_PRDs_{label}_animated.gif')
                
-        # ===============================================
-    else:
-        raise Exception(f"Wrong run type provided : {args.type}")
+        # ==============================================
 
 
 
