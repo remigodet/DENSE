@@ -727,20 +727,23 @@ if __name__ == '__main__':
              # init
             
             plt.clf()
-            
+            make_gif = False
             if c+1 == len(metrics_hist[0]) : 
                 # plt.subplot(args.num_users+1,1,c+1, label="all clients")
                 label = f"all_combined"
+                make_gif = True # only make gif for all combined
             else: 
                 # plt.subplot(args.num_users+1,1,c+1)
                 label = f"client{c}"
             # initialize gif creator 
-            gif_creator = GifCreator(title=label)
+            if make_gif:
+                gif_creator = GifCreator(title=label)
             plt.xlabel(label)
             
             num_colors = len(metrics_hist)
             for i in range(num_colors):
-                gif_creator.add_data(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1])
+                if make_gif:
+                    gif_creator.add_data(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1])
                 if i%10==0:
                     plt.plot(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1], label=f"epoch {i+1}", color=(0, i/num_colors, 0)) # list indices must be integers or slices, not str
                 else:
@@ -751,8 +754,8 @@ if __name__ == '__main__':
             plt.ylabel('precision')
             plt.legend()
             plt.savefig(f'run/{args.run_name}/figures/synthesis_PRDs_{label}.png') 
-
-            gif_creator.create_gif(f'run/{args.run_name}/figures/synthesis_PRDs_{label}_animated.gif')
+            if make_gif:
+                gif_creator.create_gif(f'run/{args.run_name}/figures/synthesis_PRDs_{label}_animated.gif')
                
         # ==============================================
 
