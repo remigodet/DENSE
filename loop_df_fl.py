@@ -664,7 +664,7 @@ if __name__ == '__main__':
         # plot distillation test accuracy
         plt.clf()
         plt.title("Distillation Test Accuracy")
-        plt.plot([ i for i in range(args.epochs) ], distill_acc)
+        plt.plot([ i for i in range(len(distill_acc)) ], distill_acc)
         plt.xlabel('epoch')
         plt.ylabel('distillation test accuracy')
         plt.legend()
@@ -674,7 +674,7 @@ if __name__ == '__main__':
         # plot distillation loss 
         plt.clf()
         plt.title("Distillation Loss")
-        plt.plot([ i for i in range(args.epochs) ], distill_avg_loss)
+        plt.plot([ i for i in range(len(distill_avg_loss)) ], distill_avg_loss)
         plt.xlabel('epoch')
         plt.ylabel('distillation loss')
         plt.legend()
@@ -684,7 +684,7 @@ if __name__ == '__main__':
         # plot distillation accuracy 
         plt.clf()
         plt.title("Distillation Accuracy (Ensemble vs Global Model)")
-        plt.plot([ i for i in range(args.epochs) ], distill_correct_acc)
+        plt.plot([ i for i in range(len(distill_correct_acc)) ], distill_correct_acc)
         plt.xlabel('epoch')
         plt.ylabel('distillation acc')
         plt.legend()

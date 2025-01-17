@@ -1,5 +1,2 @@
-readme_metrics_oh01_longer              loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 0.1   20 auto cifar10 1   400 30 0 0.005 0.5 1 no readme
-readme_metrics_oh01_longergen           loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 0.1   20 auto cifar10 1   200 60 0 0.005 0.5 1 no readme
-readme_metrics_oh001                    loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 0.01  20 auto cifar10 1   200 30 0 0.005 0.5 1 no readme
-readme_metrics_oh05                     loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 0.5   20 auto cifar10 1   200 30 0 0.005 0.5 1 no readme
-readme_metrics_oh0001                   loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 0.001 20 auto cifar10 1   200 30 0 0.005 0.5 1 no readme
+readme_metrics_oh01_longer2              loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 0.1   20 auto cifar10 1   400 30 0 0.005 0.5 1 no readme
+readme_metrics_oh01_longer3            loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 0.1   20 auto cifar10 1   400 30 0 0.005 0.5 1 no readme
