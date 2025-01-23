@@ -4,7 +4,7 @@
 
 from torch import nn
 import torch.nn.functional as F
-
+import torch
 
 class CNNMnist(nn.Module):
     def __init__(self):
@@ -46,6 +46,24 @@ class CNNCifar(nn.Module):
         x = self.fc1(x)
         return x
 
+class PCNNCifar(nn.Module):
+    '''
+    Implementation of parallel binary CNNs for distillation experiment
+    '''
+    def __init__(self):
+        super(PCNNCifar, self).__init__()
+        # parallel CNNs
+        self.CNNs = [CNNCifar() for i in range(10)]
+        # replacing linear head to a single logit
+        for cnn in self.CNNs:
+            cnn.fc1 = nn.Linear(128*4*4, 1)
+    def forward(self, x): 
+        x = [cnn(x) for cnn in self.CNNs]
+        x = torch.hstack(x)
+        # print(x.shape)
+        return x
+        
+        
 
 class CNNCifar100(nn.Module):
     def __init__(self):
@@ -83,3 +101,13 @@ class CNNCifar2(nn.Module):  # 重新搭建CNN
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return x
+
+
+if __name__ == '__main__':
+    
+    model = PCNNCifar()
+    
+    import torch 
+    x = torch.rand((13,3,32,32))
+    model(x)
+    

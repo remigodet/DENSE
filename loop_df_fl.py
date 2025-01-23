@@ -18,7 +18,7 @@ from helpers.datasets import partition_data
 from helpers.synthesizers import AdvSynthesizer, SynthesizerFromLoader
 from helpers.utils import get_dataset, average_weights, DatasetSplit, KLDiv, setup_seed, test
 from models.generator import Generator
-from models.nets import CNNCifar, CNNMnist, CNNCifar100
+from models.nets import CNNCifar, CNNMnist, CNNCifar100, PCNNCifar
 import torch
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 import torch.nn.functional as F
@@ -267,7 +267,7 @@ def args_parser():
     parser.add_argument('--type', default=None, type=str,
                         help='seed for initializing training.')
     parser.add_argument('--model', default="", type=str,
-                        help='seed for initializing training.')
+                        help='model used for client and distillation')
     parser.add_argument('--other', default="", type=str,
                         help='seed for initializing training.')
     parser.add_argument('--upper_bound', default=None, type=str, help=" 'train' or 'test' dataset to be used in place of synthetic data for distillation")
@@ -437,6 +437,8 @@ def get_model(args):
         global_model.head = torch.nn.Linear(global_model.head.in_features, 10)
         global_model = global_model.cuda()
         global_model = torch.nn.DataParallel(global_model)
+    elif args.model == "pcnn":
+        global_model = PCNNCifar().cuda()
     return global_model
 
 
@@ -558,7 +560,9 @@ if __name__ == '__main__':
         acc, test_loss = test(ensemble_model, test_loader)
         print("ensemble acc:", acc)
         # ===============================================
-        global_model = get_model(args)
+        print("CHANGED DISTILLATION MODEL TO PCNN !!!!!")
+        global_model = PCNNCifar().cuda()
+        # global_model = get_model(args)
         # ===============================================
         # define synthetic data source for the distillation
         args.cur_ep = 0
@@ -745,7 +749,7 @@ if __name__ == '__main__':
                 if make_gif:
                     gif_creator.add_data(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1])
                 if i%10==0:
-                    plt.plot(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1], label=f"epoch {i+1}", color=(0, i/num_colors, 0)) # list indices must be integers or slices, not str
+                    plt.plot(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1], label=f"{i+1}%", color=(0, i/num_colors, 0)) # list indices must be integers or slices, not str
                 else:
                     plt.plot(metrics_hist[i][c][-2][1],metrics_hist[i][c][-1][1], color=(0, i/num_colors, 0)) # list indices must be integers or slices, not str
             plt.xlim(0,1)
