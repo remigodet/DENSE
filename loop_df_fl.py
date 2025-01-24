@@ -18,7 +18,8 @@ from helpers.datasets import partition_data
 from helpers.synthesizers import AdvSynthesizer, SynthesizerFromLoader
 from helpers.utils import get_dataset, average_weights, DatasetSplit, KLDiv, setup_seed, test
 from models.generator import Generator
-from models.nets import CNNCifar, CNNMnist, CNNCifar100, PCNNCifar
+from models.nets import CNNCifar, CNNMnist, CNNCifar100
+from models.nets import PCNNCifar as PCNNCifar
 import torch
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 import torch.nn.functional as F
