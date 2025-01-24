@@ -65,10 +65,10 @@ class PCNNCifar(nn.Module):
             
        
     def forward(self, x): 
-        print([next(cnn.parameters()).is_cuda for cnn in self.CNNs])
+        # print([next(cnn.parameters()).is_cuda for cnn in self.CNNs])
         x = [cnn(x) for cnn in self.CNNs]
         x = torch.hstack(x)
-        print(x.is_cuda)
+        # print(x.is_cuda)
         return x
         
         
