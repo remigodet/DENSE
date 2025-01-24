@@ -53,14 +53,20 @@ class PCNNCifar(nn.Module):
     def __init__(self):
         super(PCNNCifar, self).__init__()
         # parallel CNNs
-        self.CNNs = [CNNCifar() for i in range(10)]
-        # replacing linear head to a single logit
+        self.CNNs = [CNNCifar() for i in range(10)] # dispatch to CUDA, as it will be on CUDA anyways (not very clean) (should do for child in children -> cuda() )
+        # add to module (to link paramters to optimizer)
         for cnn in self.CNNs:
+            self.add_module("cnn", cnn)
+            cnn.cuda()
+        # replacing linear head to a single logit
             cnn.fc1 = nn.Linear(128*4*4, 1)
     def forward(self, x): 
+        print(x.is_cuda)
+        print([next(cnn.parameters()).is_cuda for cnn in self.CNNs])
         x = [cnn(x) for cnn in self.CNNs]
-        x = torch.hstack(x)
-        # print(x.shape)
+        print(x.is_cuda)
+        x = torch.hstack(x).cuda()
+        print(x.is_cuda)
         return x
         
         
@@ -105,9 +111,9 @@ class CNNCifar2(nn.Module):  # 重新搭建CNN
 
 if __name__ == '__main__':
     
-    model = PCNNCifar()
-    
-    import torch 
-    x = torch.rand((13,3,32,32))
+    model = PCNNCifar().cuda()
+    device = next(model.parameters()).device
+    print(device)
+    x = torch.rand((13,3,32,32)).to(device)
     model(x)
     
