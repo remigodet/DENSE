@@ -1,3 +1,5 @@
-readme_metrics_PCNN                 loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 1     20 auto cifar10 1   400 30 0 0.005 0.5 1 no readme
-readme_metrics_oh01_PCNN            loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 0.1   20 auto cifar10 1   400 30 0 0.005 0.5 1 no readme
-
+readme_metrics_PCNN2                              loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 1     20 auto cifar10 1   400 30 0 0.005 0.5 1 no readme
+readme_metrics_oh01_PCNN2                         loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 0.1   20 auto cifar10 1   400 30 0 0.005 0.5 1 no readme
+readme_metrics_PCNN3                            loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 1     20 auto cifar10 1   400 30 0 0.005 0.5 1 no readme
+readme_metrics_oh01_PCNN3                         loop_df_fl.py dpdense3 0.01 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 0.1   20 auto cifar10 1   400 30 0 0.005 0.5 1 no readme
+readme_metrics_PCNN2_lowdistilllr                 loop_df_fl.py dpdense3 0.001 cnn cifar10 0.5  1 5 0.5 1.1 10000 1000 False 400 400 1e-5 64 256 1e-3 1.0 1     20 auto cifar10 1   400 30 0 0.005 0.5 1 no readme
