@@ -561,9 +561,9 @@ if __name__ == '__main__':
         acc, test_loss = test(ensemble_model, test_loader)
         print("ensemble acc:", acc)
         # ===============================================
-        print("CHANGED DISTILLATION MODEL TO PCNN !!!!!")
-        global_model = PCNNCifar().cuda()
-        # global_model = get_model(args)
+        # print("CHANGED DISTILLATION MODEL TO PCNN !!!!!")
+        # global_model = PCNNCifar().cuda()
+        global_model = get_model(args)
         # ===============================================
         # define synthetic data source for the distillation
         args.cur_ep = 0
