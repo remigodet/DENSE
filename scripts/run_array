@@ -10,7 +10,7 @@
 # Notify me ! 
 #OAR --notify mail:remi.godet@inria.fr
 #OAR -l gpu=1, walltime=0:00:10
-#OAR -p gpu_count>=1 and gpu_compute_capability_major>='5.0'
+#OAR -p gpu_count>=1 and gpu_compute_capability_major>=5
 #
 # The job is submitted to the default queue
 #OAR -q p4
