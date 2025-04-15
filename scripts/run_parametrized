@@ -1,3 +1,4 @@
+module load conda
 echo "RUN DENSE ARRAY"
 source ./miniconda3/bin/activate
 cd DENSE
