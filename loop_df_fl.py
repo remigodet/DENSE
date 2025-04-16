@@ -24,8 +24,8 @@ import torch
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 import torch.nn.functional as F
 
-from models.resnet import resnet18
-from models.vit import deit_tiny_patch16_224
+# from models.resnet import resnet18
+# from models.vit import deit_tiny_patch16_224
 import wandb
 
 import synthetic_data_metrics
@@ -431,15 +431,15 @@ def get_model(args):
         # global_model = resnet18()
         global_model = resnet18(num_classes=100).cuda()
 
-    elif args.model == "vit":
-        global_model = deit_tiny_patch16_224(num_classes=1000,
-                                             drop_rate=0.,
-                                             drop_path_rate=0.1)
-        global_model.head = torch.nn.Linear(global_model.head.in_features, 10)
-        global_model = global_model.cuda()
-        global_model = torch.nn.DataParallel(global_model)
-    elif args.model == "pcnn":
-        global_model = PCNNCifar().cuda()
+    # elif args.model == "vit":
+    #     global_model = deit_tiny_patch16_224(num_classes=1000,
+    #                                          drop_rate=0.,
+    #                                          drop_path_rate=0.1)
+    #     global_model.head = torch.nn.Linear(global_model.head.in_features, 10)
+    #     global_model = global_model.cuda()
+        # global_model = torch.nn.DataParallel(global_model)
+    # elif args.model == "pcnn":
+    #     global_model = PCNNCifar().cuda()
     return global_model
 
 
